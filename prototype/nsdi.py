@@ -63,6 +63,7 @@ class RAG(Graph):
             for iface in vlan.ifaces:
                 if (iface.neighbor.vlan.num == vlan.num 
                         and iface.neighbor.router.ospf is not None):
+                    # FIXME: handle OSPF adjacencies with multiple L2 hops
                     self.add_edge(self.ospf_name(router), 
                             self.ospf_name(iface.neighbor.router), 
                             color="green")

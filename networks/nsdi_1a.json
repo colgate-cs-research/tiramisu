@@ -17,7 +17,7 @@
     {
         "name": "b",
         "ifaces": [
-            { "vlan": 1, "neighbor": "d" },
+            { "vlan": 1, "neighbor": "s1" },
             { "vlan": 3, "neighbor": "c" },
             { "vlan": 4, "neighbor": "e" },
             { "vlan": 10, "neighbor": "b" }
@@ -42,6 +42,16 @@
                 { "addr" : "10.0.11.1" }
             ]
         }
+    },
+    {
+        "name": "s1",
+        "ifaces": [
+            { "vlan": 1, "neighbor": "b" },
+            { "vlan": 1, "neighbor": "d" }
+        ],
+        "vlans": [
+            { "num": 1, "addr": "10.0.1.3/30" }
+        ]
     },
     {
         "name": "c",
@@ -71,7 +81,7 @@
     {
         "name": "d",
         "ifaces": [
-            { "vlan": 1, "neighbor": "b" },
+            { "vlan": 1, "neighbor": "s1" },
             { "vlan": 2, "neighbor": "c" },
             { "vlan": 12, "neighbor": "d" }
         ],
