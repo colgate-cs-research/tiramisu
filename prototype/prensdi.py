@@ -5,7 +5,7 @@ import graph
 
 class RPG(graph.Graph):
     def __init__(self, net, subnets=None):
-        super().__init__()
+        super().__init__(net)
 
         self._t = self._s = None
         if (subnets is not None):

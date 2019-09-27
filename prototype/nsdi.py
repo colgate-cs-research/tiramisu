@@ -4,8 +4,9 @@ import config
 import graph
 
 class RAG(graph.Graph):
-    def __init__(self, net, subnet=None):
-        super().__init__()
+    def __init__(self, net, l2, subnet=None):
+        super().__init__(net)
+        self._l2 = l2
         self._subnet = subnet
         self._ospf_sub = self.add_subgraph("ospf", color="forestgreen")
         self._bgp_sub = self.add_subgraph("bgp", color="orange")
@@ -56,12 +57,10 @@ class RAG(graph.Graph):
 
     def add_ospf_adjacencies(self, router):
         for vlan in router.ospf.active_vlans:
-            for iface in vlan.ifaces:
-                if (iface.neighbor.vlan.num == vlan.num 
-                        and iface.neighbor.router.ospf is not None):
-                    # FIXME: handle OSPF adjacencies with multiple L2 hops
+            for adjacent in self._l2.get_adjacent_vlans(vlan):
+                if (adjacent.router.ospf is not None):
                     self.add_edge(self.ospf_name(router), 
-                            self.ospf_name(iface.neighbor.router), 
+                            self.ospf_name(adjacent.router), 
                             color="forestgreen")
 
     def add_bgp_adjacencies(self, router):
@@ -82,7 +81,7 @@ class RAG(graph.Graph):
 
 class RPG(graph.Graph):
     def __init__(self, net, subnets=None, rag=None):
-        super().__init__()
+        super().__init__(net)
 
         self._t = self._s = None
         self._rag = None

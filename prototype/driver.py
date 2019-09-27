@@ -24,9 +24,15 @@ def main():
     net = config.Network.load(settings.json_path)
     print(net)
 
-    # Generate physical topology
+    # Generate physical and layer 2
     phy = graph.Physical(net)
     phy.render(os.path.join(settings.render_path, 'physical.png'))
+    l2 = graph.Layer2(net)
+    l2.render(os.path.join(settings.render_path, 'layer2.png'))
+    for router in net.routers.values():
+        for vlan in router.vlans.values():
+            print('%s:\n\t%s' % (vlan, 
+                '\n\t'.join([str(v) for v in l2.get_adjacent_vlans(vlan)])))
 
     # Determine subnets
     subnets = set()
@@ -38,12 +44,22 @@ def main():
         # Create RAGs
         rags = {} 
         for t in subnets:
-            rag = nsdi.RAG(net, t)
+            rag = nsdi.RAG(net, l2, t)
             rag.taint()
             rag.render(os.path.join(settings.render_path, ('rag_%s.png' % t)))
             rags[t] = rag
+        # Create RPGs
+        rpgs = {}
+        for t in subnets:
+            for s in subnets:
+                if (s == t):
+                    continue
+                pair = (t, s)
+                rpg = nsdi.RPG(net, pair, rags[t])
+                rpg.render(os.path.join(settings.render_path, 
+                    ('rpg_%s-%s.png') % pair))
+                rpgs[pair] = rpg
 
-        
     # Create pre-NSDI-style graphs
     if (settings.prensdi):
         # Create RPGs
