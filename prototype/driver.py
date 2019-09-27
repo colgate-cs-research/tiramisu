@@ -33,14 +33,23 @@ def main():
     if (settings.nsdi):
         # Create RAGs
         rags = {} 
-        for subnet in subnets:
-            rag = nsdi.RAG(net, subnet)
+        for t in subnets:
+            rag = nsdi.RAG(net, t)
             rag.taint()
-            rag.render(os.path.join(settings.render_path, 
-                    ('rag_%s.png' % subnet)))
-            rags[subnet] = rag
-        rpg = nsdi.RPG(net)
-        rpg.render(os.path.join(settings.render_path, 'rpg.png'))
+            rag.render(os.path.join(settings.render_path, ('rag_%s.png' % t)))
+            rags[t] = rag
+
+        # Create RPGs
+        rpgs = {}
+        for t in subnets:
+            for s in subnets:
+                if (s == t):
+                    continue
+                pair = (t, s)
+                rpg = nsdi.RPG(net, pair, rags[t])
+                rpg.render(os.path.join(settings.render_path, 
+                    ('rpg_%s-%s.png') % pair))
+                rpgs[pair] = rpg
 
 if __name__ == '__main__':
     main()

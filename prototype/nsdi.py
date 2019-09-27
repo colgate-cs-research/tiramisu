@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import pygraphviz
+import config
 
 class Graph:
     def __init__(self):
@@ -88,6 +89,13 @@ class RAG(Graph):
                 edge.attr["color"] = "red"
                 self.propagate_taint(edge[1], ibgp)
 
+    def is_tainted(self, process):
+        if (type(process) is config.Ospf):
+            vertex_name = self.ospf_name(process.router)
+        elif (type(process) is config.Bgp):
+            vertex_name = self.bgp_name(process.router)
+        return (self.get_vertex(vertex_name).attr["color"] == "red")
+
     def add_ospf_adjacencies(self, router):
         for vlan in router.ospf.active_vlans:
             for iface in vlan.ifaces:
@@ -115,11 +123,20 @@ class RAG(Graph):
 
 
 class RPG(Graph):
-    def __init__(self, net):
+    def __init__(self, net, subnets=None, rag=None):
         super().__init__()
-        self._vlan_sub = self.add_subgraph("vlan", color="blue")
-        self._ospf_sub = self.add_subgraph("ospf", color="green")
+
+        self._t = self._s = None
+        self._rag = None
+        if (subnets is not None):
+            self._t, self._s = subnets
+            self._rag = rag
+
+        self._subnet_sub = self.add_subgraph("subnet", color="red")
         self._bgp_sub = self.add_subgraph("bgp", color="orange")
+        self._ospf_sub = self.add_subgraph("ospf", color="green")
+        self._vlan_sub = self.add_subgraph("vlan", color="blue")
+
         for router in net.routers.values():
             self.add_vlan_vertices(router)
             if (router.ospf is not None):
@@ -127,14 +144,21 @@ class RPG(Graph):
             if (router.bgp is not None):
                 self.add_bgp_vertices(router)
 
+        if (self._t is not None):
+            self.add_vertex(self._t, subgraph=self._subnet_sub, color="red")
+            self.add_vertex(self._s, subgraph=self._subnet_sub, color="red")
+
         for router in net.routers.values():
             self.add_vlan_to_vlan_edges(router)
+            self.add_vlan_to_subnet_edges(router)
             if (router.ospf is not None):
                 self.add_ospf_to_vlan_edges(router)
-                self.add_vlan_to_ospf_edges(router) # TODO: check taints
+                self.add_subnet_to_ospf_edges(router)
+                self.add_vlan_to_ospf_edges(router)
             if (router.bgp is not None):
                 self.add_bgp_to_vlan_ospf_edges(router)
-                self.add_vlan_to_bgp_edges(router) # TODO: check taints
+                self.add_subnet_to_bgp_edges(router)
+                self.add_vlan_to_bgp_edges(router)
 
     def add_vlan_vertices(self, router):
         for vlan in router.vlans.values():
@@ -174,14 +198,39 @@ class RPG(Graph):
                 self.add_edge(self.bgp_name(neighbor), 
                         self.ospf_name(router))
 
+    def add_subnet_to_ospf_edges(self, router):
+        if (self._t is not None and self._t in router.ospf.origins):
+            self.add_edge(self._t, self.ospf_name(router))
+
+    def add_subnet_to_bgp_edges(self, router):
+        if (self._t is not None and self._t in router.bgp.origins):
+            for neighbor in router.bgp.neighbors:
+                print("Origin edge: %s -> %s" % 
+                        (self._t, self.bgp_name(neighbor)))
+                self.add_edge(self._t, self.bgp_name(neighbor))
+
     def add_vlan_to_ospf_edges(self, router):
+        if (not self._rag.is_tainted(router.ospf)):
+            return
         for vlan in router.vlans.values():
             self.add_edge(self.vlan_name(vlan), self.ospf_name(router))
 
     def add_vlan_to_bgp_edges(self, router):
+        if (not self._rag.is_tainted(router.bgp)):
+            return
         for vlan in router.vlans.values():
             for neighbor in router.bgp.neighbors:
                 self.add_edge(self.vlan_name(vlan), self.bgp_name(neighbor))
+
+    def add_vlan_to_subnet_edges(self, router):
+        if (self._s in router.subnets
+                and ((router.ospf is not None 
+                        and self._rag.is_tainted(router.ospf))
+                    or (router.bgp is not None 
+                        and self._rag.is_tainted(router.bgp)))):
+            for vlan in router.vlans.values():
+                self.add_edge(self.vlan_name(vlan), self._s)
+
 
     def vlan_name(self, vlan):
         return "%s:VLAN:%s" % (vlan.router.name, vlan.num)
