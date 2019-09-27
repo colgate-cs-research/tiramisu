@@ -12,7 +12,8 @@ class Graph:
 
     def add_vertex(self, name, color='black', subgraph=None):
         if (subgraph is not None):
-            subgraph.add_node(name, color=color, fontcolor=color)
+            subgraph.add_node(name, color=subgraph.node_attr['color'], 
+                fontcolor=subgraph.node_attr['color'])
         else:
             self._graph.add_node(name, color=color, fontcolor=color)
 

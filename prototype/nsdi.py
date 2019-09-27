@@ -7,16 +7,14 @@ class RAG(graph.Graph):
     def __init__(self, net, subnet=None):
         super().__init__()
         self._subnet = subnet
-        self._ospf_sub = self.add_subgraph("ospf", color="green")
+        self._ospf_sub = self.add_subgraph("ospf", color="forestgreen")
         self._bgp_sub = self.add_subgraph("bgp", color="orange")
         self._subnet_sub = self.add_subgraph("subnet", color="red")
         for router in net.routers.values():
             if (router.ospf is not None):
-                self.add_vertex(self.ospf_name(router), color='green', 
-                    subgraph=self._ospf_sub)
+                self.add_vertex(self.ospf_name(router), subgraph=self._ospf_sub)
             if (router.bgp is not None):
-                self.add_vertex(self.bgp_name(router), color='orange', 
-                    subgraph=self._bgp_sub)
+                self.add_vertex(self.bgp_name(router), subgraph=self._bgp_sub)
 
         if (subnet is not None):
             self.add_vertex(subnet, subgraph=self._subnet_sub)
@@ -34,7 +32,7 @@ class RAG(graph.Graph):
     def taint(self):
         if (self._subnet is not None):
             vertex = self.get_vertex(self._subnet)
-            vertex.attr["fontcolor"] = "red"
+            vertex.attr["color"] = "black"
             self.propagate_taint(vertex)
 
     def propagate_taint(self, vertex, noibgp=False):
@@ -64,7 +62,7 @@ class RAG(graph.Graph):
                     # FIXME: handle OSPF adjacencies with multiple L2 hops
                     self.add_edge(self.ospf_name(router), 
                             self.ospf_name(iface.neighbor.router), 
-                            color="green")
+                            color="forestgreen")
 
     def add_bgp_adjacencies(self, router):
         for neighbor in router.bgp.external:
@@ -94,7 +92,7 @@ class RPG(graph.Graph):
 
         self._subnet_sub = self.add_subgraph("subnet", color="red")
         self._bgp_sub = self.add_subgraph("bgp", color="orange")
-        self._ospf_sub = self.add_subgraph("ospf", color="green")
+        self._ospf_sub = self.add_subgraph("ospf", color="forestgreen")
         self._vlan_sub = self.add_subgraph("vlan", color="blue")
 
         for router in net.routers.values():
@@ -105,8 +103,8 @@ class RPG(graph.Graph):
                 self.add_bgp_vertices(router)
 
         if (self._t is not None):
-            self.add_vertex(self._t, subgraph=self._subnet_sub, color="red")
-            self.add_vertex(self._s, subgraph=self._subnet_sub, color="red")
+            self.add_vertex(self._t, subgraph=self._subnet_sub)
+            self.add_vertex(self._s, subgraph=self._subnet_sub)
 
         for router in net.routers.values():
             self.add_vlan_to_vlan_edges(router)
@@ -122,17 +120,14 @@ class RPG(graph.Graph):
 
     def add_vlan_vertices(self, router):
         for vlan in router.vlans.values():
-            self.add_vertex(self.vlan_name(vlan), color='blue',
-                    subgraph=self._vlan_sub)
+            self.add_vertex(self.vlan_name(vlan), subgraph=self._vlan_sub)
 
     def add_ospf_vertices(self, router):
-        self.add_vertex(self.ospf_name(router), color='green', 
-                subgraph=self._ospf_sub)
+        self.add_vertex(self.ospf_name(router), subgraph=self._ospf_sub)
 
     def add_bgp_vertices(self, router):
         for neighbor in router.bgp.neighbors:
-            self.add_vertex(self.bgp_name(neighbor), color='orange',
-                    subgraph=self._bgp_sub)
+            self.add_vertex(self.bgp_name(neighbor), subgraph=self._bgp_sub)
 
     def add_vlan_to_vlan_edges(self, router):
         for vlan in router.vlans.values():

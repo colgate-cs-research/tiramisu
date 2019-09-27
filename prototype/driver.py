@@ -2,8 +2,10 @@
 
 from argparse import ArgumentParser
 import config
+import graph
 import nsdi
 import os
+import prensdi
 
 def main():
     # Parse arguments
@@ -14,6 +16,8 @@ def main():
             required=True, help='Path to render graphs')
     arg_parser.add_argument('-nsdi', dest='nsdi', action='store_true',
             help='Render NSDI-style graphs')
+    arg_parser.add_argument('-prensdi', dest='prensdi', action='store_true',
+            help='Render pre-NSDI-style graphs')
     settings = arg_parser.parse_args()
     print("Settings: %s" % settings)
 
@@ -39,6 +43,9 @@ def main():
             rag.render(os.path.join(settings.render_path, ('rag_%s.png' % t)))
             rags[t] = rag
 
+        
+    # Create pre-NSDI-style graphs
+    if (settings.prensdi):
         # Create RPGs
         rpgs = {}
         for t in subnets:
@@ -46,7 +53,8 @@ def main():
                 if (s == t):
                     continue
                 pair = (t, s)
-                rpg = nsdi.RPG(net, pair, rags[t])
+                rpg = prensdi.RPG(net, pair)
+                rpg.taint()
                 rpg.render(os.path.join(settings.render_path, 
                     ('rpg_%s-%s.png') % pair))
                 rpgs[pair] = rpg
