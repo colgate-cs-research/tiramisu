@@ -86,7 +86,7 @@ class RPG(graph.Graph):
 
     def add_ospf_reaches(self, router):
         for vlan in router.vlans.values():
-            self.add_edge(self.ospf_name(vlan), self._s, color="red")
+            self.add_edge(self.ospf_name(vlan), self._s)
 
     def add_bgp_adjacencies(self, router):
         for neighbor in router.bgp.external:
@@ -119,7 +119,7 @@ class RPG(graph.Graph):
 
     def add_bgp_reaches(self, router):
         for vlan in router.vlans.values():
-            self.add_edge(self.bgp_name(vlan), self._s, color="red")
+            self.add_edge(self.bgp_name(vlan), self._s)
 
     def add_vlan_adjacencies(self, router):
         for vlan in router.vlans.values():
@@ -168,7 +168,6 @@ class RPG(graph.Graph):
             ibgp = (edge.attr["style"] == "dotted")
             lateral = (("OSPF" in edge[0]) and ("OSPF" in edge[1]))
             dependency = (edge.attr["style"] == "dashed")
-            print("%s %s %s" % (edge, ibgp, lateral))
             if ((not (ibgp and noibgp))
                 and (not (lateral and nolateral))):
                 edge.attr["color"] = "red"

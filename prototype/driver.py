@@ -29,10 +29,6 @@ def main():
     phy.render(os.path.join(settings.render_path, 'physical.png'))
     l2 = graph.Layer2(net)
     l2.render(os.path.join(settings.render_path, 'layer2.png'))
-    for router in net.routers.values():
-        for vlan in router.vlans.values():
-            print('%s:\n\t%s' % (vlan, 
-                '\n\t'.join([str(v) for v in l2.get_adjacent_vlans(vlan)])))
 
     # Determine subnets
     subnets = set()
