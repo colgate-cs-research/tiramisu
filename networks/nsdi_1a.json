@@ -1,0 +1,96 @@
+{
+    "routers": [
+    {
+        "name": "e",
+        "ifaces": [
+            { "vlan": 4, "neighbor": "b" }
+        ],
+        "vlans": [
+            { "num": 4, "addr": "10.0.4.1/30" }
+        ],
+        "bgp" : {
+            "external": [
+                { "addr" : "10.0.4.2" }
+            ]
+        }
+    },
+    {
+        "name": "b",
+        "ifaces": [
+            { "vlan": 1, "neighbor": "d" },
+            { "vlan": 3, "neighbor": "c" },
+            { "vlan": 4, "neighbor": "e" },
+            { "vlan": 10, "neighbor": "b" }
+        ],
+        "vlans": [
+            { "num": 1, "addr": "10.0.1.2/30" },
+            { "num": 3, "addr": "10.0.3.2/30" },
+            { "num": 4, "addr": "10.0.4.2/30" },
+            { "num": 10, "addr": "10.0.10.1/30" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 1 },
+                { "vlan" : 3 }
+            ]
+        },
+        "bgp": {
+            "external": [
+                { "addr" : "10.0.4.1" }
+            ],
+            "internal": [
+                { "addr" : "10.0.11.1" }
+            ]
+        }
+    },
+    {
+        "name": "c",
+        "ifaces": [
+            { "vlan": 2, "neighbor": "d" },
+            { "vlan": 3, "neighbor": "b" },
+            { "vlan": 11, "neighbor": "c" }
+        ],
+        "vlans": [
+            { "num": 2, "addr": "10.0.2.2/30" },
+            { "num": 3, "addr": "10.0.3.1/30" },
+            { "num": 11, "addr": "10.0.11.1/30" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 2 },
+                { "vlan" : 3 }
+            ]
+        },
+        "bgp" : {
+            "internal" : [
+                { "addr" : "10.0.10.1" },
+                { "addr" : "10.0.12.1" }
+            ]
+        }
+    },
+    {
+        "name": "d",
+        "ifaces": [
+            { "vlan": 1, "neighbor": "b" },
+            { "vlan": 2, "neighbor": "c" },
+            { "vlan": 12, "neighbor": "d" }
+        ],
+        "vlans": [
+            { "num": 1, "addr": "10.0.1.1/30" },
+            { "num": 2, "addr": "10.0.2.1/30" },
+            { "num": 12, "addr": "10.0.12.1/30" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 1 },
+                { "vlan" : 2 }
+            ]
+        },
+        "bgp" : {
+            "internal": [
+                { "addr" : "10.0.11.1" }
+            ]
+        }
+    }
+    ]
+}
