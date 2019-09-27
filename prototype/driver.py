@@ -21,7 +21,7 @@ def main():
     print(net)
 
     # Generate physical topology
-    phy = nsdi.Physical(net)
+    phy = graph.Physical(net)
     phy.render(os.path.join(settings.render_path, 'physical.png'))
 
     # Determine subnets
