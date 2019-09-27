@@ -76,6 +76,10 @@ def main():
             tpg = prensdi.TPG(net, rpg, pair)
             tpg.render(os.path.join(settings.render_path, 
                 ('tpg_%s-%s.png') % pair))
+            found, path = tpg.has_path()
+            print("%s -> %s? %s" % (pair[1], pair[0], found))
+            if (found):
+                print(path)
             tpgs[pair] = tpg
 
 

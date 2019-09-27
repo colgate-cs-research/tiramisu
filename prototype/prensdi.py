@@ -88,16 +88,20 @@ class RPG(graph.Graph):
             self.add_edge(self.ospf_name(vlan), self._s)
 
     def add_bgp_adjacencies(self, router):
-        for neighbor in router.bgp.external:
-            if (neighbor.iface.num in router.vlans):
-                self.add_edge(self.bgp_name(router.vlans[neighbor.iface.num]), 
-                        self.bgp_name(neighbor.iface), combine=False,
-                        color="orange")
-        for neighbor in router.bgp.internal:
-            if (neighbor.iface.num in router.vlans):
-                self.add_edge(self.bgp_name(router.vlans[neighbor.iface.num]), 
-                        self.bgp_name(neighbor.iface), combine=False,
-                        color="orange", style="dotted")
+        for neighbor in router.bgp.neighbors:
+            style = ("dotted" if neighbor in router.bgp.internal else "solid")
+#            # Only connect matching VLAN
+#            if (neighbor.iface.num in router.vlans):
+#                self.add_edge(self.bgp_name(router.vlans[neighbor.iface.num]), 
+#                        self.bgp_name(neighbor.iface), combine=False,
+#                        color="orange", style=style)
+            # Connect all VLANs
+            for vlanA in router.vlans.values():
+                for vlanB in neighbor.iface.router.vlans.values():
+                    self.add_edge(self.bgp_name(vlanA), 
+                        self.bgp_name(vlanB), combine=False,
+                        color="orange", style=style)
+
 
     def add_bgp_intraproc(self, router):
         for vlanA in router.vlans.values():
@@ -280,8 +284,15 @@ class TPG(graph.Graph):
         for vlan in router.vlans.values():
             if not self.has_vertex(self.bgp_name(vlan, "IN")):
                 continue
-            self.add_edge(self.bgp_name(vlan, "IN"), 
-                    self.bgp_name(vlan, "OUT"), color="orange")
+#            # Connect only to same VLAN
+#            self.add_edge(self.bgp_name(vlan, "IN"), 
+#                    self.bgp_name(vlan, "OUT"), color="orange")
+            # Connect across VLANs
+            for vlanB in router.vlans.values():
+                if not self.has_vertex(self.bgp_name(vlanB, "IN")):
+                    continue
+                self.add_edge(self.bgp_name(vlan, "IN"), 
+                        self.bgp_name(vlanB, "OUT"), color="orange")
 
     def add_bgp_dependency(self, router):
         for vlan in router.vlans.values():
@@ -350,5 +361,25 @@ class TPG(graph.Graph):
 
     def bgp_name(self, vlan, inout):
         return "%s:BGP:VLAN:%d:%s" % (vlan.router.name, vlan.num, inout)
+
+    
+    def has_path(self):
+        vertex = self.get_vertex(self._s)
+        return self.dfs(vertex, [])
+
+    def dfs(self, vertex, visited):
+        if (vertex == self.get_vertex(self._t)):
+            return True, [vertex]
+
+        if (vertex in visited):
+            return False, []
+        visited.append(vertex)
+
+        for edge in self._graph.out_edges(vertex):
+            found, subpath = self.dfs(edge[1], visited)
+            if (found):
+                return found, [vertex] + subpath
+
+        return False, []
 
 
