@@ -16,6 +16,9 @@ class Graph:
         else:
             self._graph.add_node(name, color=color, fontcolor=color)
 
+    def get_vertex(self, name):
+        return self._graph.get_node(name)
+
     def add_edge(self, src, dst, combine=False, color='black', style='solid'):
         if (combine and self._graph.has_edge(dst, src)):
             self._graph.get_edge(dst, src).attr['dir'] = 'both'
@@ -40,10 +43,12 @@ class Physical(Graph):
                 self.add_edge(router.name, iface.neighbor.router.name, True)
 
 class RAG(Graph):
-    def __init__(self, net):
+    def __init__(self, net, subnet=None):
         super().__init__()
+        self._subnet = subnet
         self._ospf_sub = self.add_subgraph("ospf", color="green")
         self._bgp_sub = self.add_subgraph("bgp", color="orange")
+        self._subnet_sub = self.add_subgraph("subnet", color="red")
         for router in net.routers.values():
             if (router.ospf is not None):
                 self.add_vertex(self.ospf_name(router), color='green', 
@@ -52,11 +57,36 @@ class RAG(Graph):
                 self.add_vertex(self.bgp_name(router), color='orange', 
                     subgraph=self._bgp_sub)
 
+        if (subnet is not None):
+            self.add_vertex(subnet, subgraph=self._subnet_sub)
+
         for router in net.routers.values():
             if (router.ospf is not None):
                 self.add_ospf_adjacencies(router)
+                if (subnet in router.ospf.origins):
+                    self.add_edge(subnet, self.ospf_name(router), color="red")
             if (router.bgp is not None):
                 self.add_bgp_adjacencies(router)
+                if (subnet in router.bgp.origins):
+                    self.add_edge(subnet, self.bgp_name(router), color="red")
+
+    def taint(self):
+        if (self._subnet is not None):
+            vertex = self.get_vertex(self._subnet)
+            vertex.attr["fontcolor"] = "red"
+            self.propagate_taint(vertex)
+
+    def propagate_taint(self, vertex, noibgp=False):
+        if vertex.attr["color"] == "red":
+            return
+
+        vertex.attr["color"] = "red"
+
+        for edge in self._graph.out_edges(vertex):
+            ibgp = (edge.attr["style"] == "dashed")
+            if (not (ibgp and noibgp)):
+                edge.attr["color"] = "red"
+                self.propagate_taint(edge[1], ibgp)
 
     def add_ospf_adjacencies(self, router):
         for vlan in router.ospf.active_vlans:
