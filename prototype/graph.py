@@ -22,6 +22,9 @@ class Graph:
     def get_vertex(self, name):
         return self._graph.get_node(name)
 
+    def has_vertex(self, name):
+        return self._graph.has_node(name)
+
     def add_edge(self, src, dst, combine=False, color='black', style='solid'):
         if (combine and self._graph.has_edge(dst, src)):
             self._graph.get_edge(dst, src).attr['dir'] = 'both'

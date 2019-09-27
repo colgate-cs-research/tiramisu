@@ -70,6 +70,14 @@ def main():
                 rpg.render(os.path.join(settings.render_path, 
                     ('rpg_%s-%s.png') % pair))
                 rpgs[pair] = rpg
+        # Create RPGs
+        tpgs = {}
+        for pair,rpg in rpgs.items():
+            tpg = prensdi.TPG(net, rpg, pair)
+            tpg.render(os.path.join(settings.render_path, 
+                ('tpg_%s-%s.png') % pair))
+            tpgs[pair] = tpg
+
 
 if __name__ == '__main__':
     main()
