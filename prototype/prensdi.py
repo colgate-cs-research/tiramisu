@@ -4,9 +4,10 @@ import config
 import graph
 
 class RPG(graph.Graph):
-    def __init__(self, net, subnets=None):
+    def __init__(self, net, l2, subnets=None):
         super().__init__(net)
 
+        self._l2 = l2
         self._t = self._s = None
         if (subnets is not None):
             self._t, self._s = subnets
@@ -65,12 +66,10 @@ class RPG(graph.Graph):
 
     def add_ospf_adjacencies(self, router):
         for vlan in router.ospf.active_vlans:
-            for iface in vlan.ifaces:
-                if (iface.neighbor.vlan.num == vlan.num 
-                        and iface.neighbor.router.ospf is not None):
+            for adjacent in self._l2.get_adjacent_vlans(vlan):
+                if (adjacent.router.ospf is not None):
                     self.add_edge(self.ospf_name(vlan), 
-                            self.ospf_name(iface.neighbor.vlan),
-                            color="forestgreen", combine=False)
+                            self.ospf_name(adjacent), color="forestgreen")
 
     def add_ospf_intraproc(self, router):
         for vlanA in router.vlans.values():
@@ -166,10 +165,15 @@ class RPG(graph.Graph):
 
         for edge in self._graph.out_edges(vertex):
             ibgp = (edge.attr["style"] == "dotted")
-            lateral = (("OSPF" in edge[0]) and ("OSPF" in edge[1]))
+            ospf = (("OSPF" in edge[0]) and ("OSPF" in edge[1])) 
+            routerA = edge[0].split(':')[0] 
+            routerB = edge[1].split(':')[0] 
+            intradevice = (routerA == routerB)
+            lateral = (ospf and not intradevice)
             dependency = (edge.attr["style"] == "dashed")
             if ((not (ibgp and noibgp))
                 and (not (lateral and nolateral))):
                 edge.attr["color"] = "red"
-                self.propagate_taint(edge[1], ibgp, dependency)
+                self.propagate_taint(edge[1], ibgp or (noibgp and intradevice), 
+                        nolateral or dependency)
 

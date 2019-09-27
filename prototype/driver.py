@@ -65,7 +65,7 @@ def main():
                 if (s == t):
                     continue
                 pair = (t, s)
-                rpg = prensdi.RPG(net, pair)
+                rpg = prensdi.RPG(net, l2, pair)
                 rpg.taint()
                 rpg.render(os.path.join(settings.render_path, 
                     ('rpg_%s-%s.png') % pair))
