@@ -14,8 +14,11 @@ class Graph:
 
     def add_vertex(self, name, color='black', subgraph=None):
         if (subgraph is not None):
-            subgraph.add_node(name, color=subgraph.node_attr['color'], 
-                fontcolor=subgraph.node_attr['color'])
+            subgraph.add_node(name, 
+                    color=(subgraph.node_attr['color'] 
+                        if color=="black" else color), 
+                    fontcolor=(subgraph.node_attr['fontcolor']
+                        if color=="black" else color))
         else:
             self._graph.add_node(name, color=color, fontcolor=color)
         return self.get_vertex(name)
@@ -26,20 +29,24 @@ class Graph:
     def has_vertex(self, name):
         return self._graph.has_node(name)
 
-    def add_edge(self, src, dst, combine=False, color='black', style='solid'):
+    def add_edge(self, src, dst, combine=False, color='black', style='solid',
+            label='', headlabel='', taillabel=''):
         if (combine and self._graph.has_edge(dst, src)):
             self._graph.get_edge(dst, src).attr['dir'] = 'both'
         else:
-            self._graph.add_edge(src, dst, color=color, style=style)
+            self._graph.add_edge(src, dst, color=color, fontcolor=color,
+                    style=style, label=label, headlabel=headlabel,
+                    taillabel=taillabel)
 
     def has_edge(self, src, dst, either=False):
         return (self._graph.has_edge(src, dst) or
                 (either and self.graph.has_edge(dst, src)))
 
-    def add_subgraph(self, name=None, color='black'):
+    def add_subgraph(self, name=None, color=None):
         subgraph = self._graph.add_subgraph(name=name, rank='same')
-        subgraph.node_attr['color'] = color
-        subgraph.node_attr['fontcolor'] = color
+        if color is not None:
+            subgraph.node_attr['color'] = color
+            subgraph.node_attr['fontcolor'] = color
         return subgraph
 
 class Physical(Graph):
@@ -192,5 +199,62 @@ class Bgp(Graph):
 
             for subnet in router.bgp.origins:
                 self.add_edge(subnet, router.name, color="red")
+
+class Combined(Graph):
+    def __init__(self, net, l2):
+        super().__init__(net) 
+        self._l2 = l2
+
+        self._subs = {}
+
+        for router in net.routers.values():
+            name = router.name
+            sub = self.add_subgraph("cluster_%s" % name)
+            self._subs[name] = sub
+            self.add_vertex(name, subgraph=sub, color="blue")
+            if (router.ospf is not None):
+                self.add_vertex(("%s:OSPF" % name), subgraph=sub, 
+                        color="forestgreen")
+            if (router.bgp is not None):
+                self.add_vertex(("%s:BGP" % name), subgraph=sub, color="orange")
+            for subnet in router.subnets:
+                self.add_vertex(subnet, subgraph=sub, color="red")
+
+        for router in net.routers.values():
+            for iface in router.ifaces.values():
+                self.add_edge(router.name, iface.neighbor.router.name, True,
+                        color="blue", label="VLAN:%d" % iface.vlan.num)
+
+            if router.ospf is not None:
+                for vlan in router.ospf.active_vlans:
+                    for adjacent in self._l2.get_adjacent_vlans(vlan):
+                        if (adjacent.router.ospf is not None):
+                            self.add_edge("%s:OSPF" % router.name, 
+                                    "%s:OSPF" % adjacent.router.name, 
+                                    color="forestgreen", combine=True)
+
+                for subnet in router.ospf.origins:
+                    self.add_edge(subnet, "%s:OSPF" % router.name, color="red")
+
+            if router.bgp is not None:
+                for neighbor in router.bgp.neighbors:
+                    import_policy = None
+                    for reverse in neighbor.iface.router.bgp.neighbors:
+                        if reverse.iface.router == router:
+                            import_policy = reverse.import_policy
+
+                    self.add_edge("%s:BGP" % router.name, 
+                            "%s:BGP" % neighbor.iface.router.name, 
+                            color="orange", 
+                            style=("dashed" if neighbor in router.bgp.internal
+                                else "solid"),
+                            taillabel=('' if neighbor.export_policy is None
+                                else "Ex:%s" % neighbor.export_policy),
+                            headlabel=('' if import_policy is None
+                                else "Im:%s" % import_policy))
+
+                for subnet in router.bgp.origins:
+                    self.add_edge(subnet, "%s:BGP" % router.name, color="red")
+
 
 

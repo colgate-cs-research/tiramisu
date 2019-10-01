@@ -109,14 +109,23 @@ class Ospf:
         return result
 
 class BgpNeighbor:
-    def __init__(self, addr):
+    def __init__(self, addr, import_policy=None, export_policy=None):
         self._addr = addr
         self._iface = None
         self._bgp = None
+        self._import_policy = import_policy
+        self._export_policy = export_policy
 
     @classmethod
     def create(cls, neighbor_json):
-        return BgpNeighbor(ipaddress.ip_address(neighbor_json["addr"]))
+        import_policy = None
+        if "import_policy" in neighbor_json:
+            import_policy = neighbor_json["import_policy"]
+        export_policy = None
+        if "export_policy" in neighbor_json:
+            export_policy = neighbor_json["export_policy"]
+        return BgpNeighbor(ipaddress.ip_address(neighbor_json["addr"]),
+                import_policy, export_policy)
 
     @property
     def addr(self):
@@ -130,10 +139,22 @@ class BgpNeighbor:
     def bgp(self):
         return self._bgp
 
+    @property
+    def import_policy(self):
+        return self._import_policy
+
+    @property
+    def export_policy(self):
+        return self._export_policy
+
     def __str__(self):
-        return ("Neighbor <addr=%s%s>" % (self._addr,
-                ('' if self._iface is None else 
-                    ', router=%s' % self._iface.router.name)))
+        return ("Neighbor <addr=%s%s%s%s>" % (self._addr, 
+                    ('' if self._iface is None else 
+                        ', router=%s' % self._iface.router.name),
+                    ('' if self._import_policy is None else
+                        ', import_policy=%s' % self._import_policy),
+                    ('' if self._export_policy is None else
+                        ', export_policy=%s' % self._export_policy)))
 
 class Bgp:
     def __init__(self, external=[], internal=[], origins=[]):

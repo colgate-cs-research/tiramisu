@@ -33,6 +33,9 @@ def main():
     ospf.render(os.path.join(settings.render_path, 'ospf.png'))
     bgp = graph.Bgp(net)
     bgp.render(os.path.join(settings.render_path, 'bgp.png'))
+    combined = graph.Combined(net, l2)
+    combined.render(os.path.join(settings.render_path, 'combined.png'))
+
 
     # Determine subnets
     subnets = set()
