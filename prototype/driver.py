@@ -15,7 +15,7 @@ def main():
     arg_parser.add_argument('-render', dest='render_path', action='store',
             required=True, help='Path to render graphs')
     arg_parser.add_argument('-rules', dest='rules', action='store',
-            help='Rules to follow', choices=["nsdi", "prensdi"])
+            help='Rules to follow', choices=["nsdi", "prensdi", "nsditpg"])
     arg_parser.add_argument('-paths', dest='paths', action='store_true',
             help='Check paths')
     settings = arg_parser.parse_args()
@@ -45,7 +45,7 @@ def main():
     graphs = None
 
     # Create NSDI-style graphs
-    if (settings.rules == "nsdi"):
+    if (settings.rules == "nsdi" or settings.rules == "nsditpg"):
         # Create RAGs
         rags = {} 
         for t in subnets:
@@ -54,19 +54,35 @@ def main():
             rag.render(os.path.join(settings.render_path, ('rag_%s.png' % t)))
             rags[t] = rag
 
-        # Create RPGs
-        rpgs = {}
-        for t in subnets:
-            for s in subnets:
-                if (s == t):
-                    continue
-                pair = (t, s)
-                rpg = nsdi.RPG(net, pair, rags[t])
-                rpg.render(os.path.join(settings.render_path, 
-                    ('rpg_%s-%s.png') % pair))
-                rpgs[pair] = rpg
+        if (settings.rules == "nsdi"):
+            # Create RPGs
+            rpgs = {}
+            for t in subnets:
+                for s in subnets:
+                    if (s == t):
+                        continue
+                    pair = (t, s)
+                    rpg = nsdi.RPG(net, pair, rags[t])
+                    rpg.render(os.path.join(settings.render_path, 
+                        ('rpg_%s-%s.png') % pair))
+                    rpgs[pair] = rpg
 
-        graphs = rpgs
+            graphs = rpgs
+        elif (settings.rules == "nsditpg"):
+            # Create TPGs
+            tpgs = {}
+            for t in subnets:
+                for s in subnets:
+                    if (s == t):
+                        continue
+                    pair = (t, s)
+                    tpg = nsdi.TPG(net, pair, rags[t])
+                    tpg.render(os.path.join(settings.render_path, 
+                        ('tpg_%s-%s.png') % pair))
+                    tpgs[pair] = tpg
+
+            graphs = tpgs
+
 
     # Create pre-NSDI-style graphs
     elif (settings.rules == "prensdi"):
