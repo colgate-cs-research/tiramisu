@@ -4,7 +4,8 @@ import pygraphviz
 
 class Graph:
     def __init__(self, net):
-        self._graph = pygraphviz.AGraph(strict=False, directed=True)
+        self._graph = pygraphviz.AGraph(strict=False, directed=True, 
+                ranksep=2.0)
         self._net = net
 
     def render(self, file_path):

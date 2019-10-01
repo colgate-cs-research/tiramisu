@@ -363,11 +363,11 @@ class TPG(graph.Graph):
         return "%s:BGP:VLAN:%d:%s" % (vlan.router.name, vlan.num, inout)
 
     
-    def has_path(self):
+    def has_path(self, failset=[]):
         vertex = self.get_vertex(self._s)
-        return self.dfs(vertex, [])
+        return self.dfs(vertex, [], failset)
 
-    def dfs(self, vertex, visited):
+    def dfs(self, vertex, visited, failset):
         if (vertex == self.get_vertex(self._t)):
             return True, [vertex]
 
@@ -376,10 +376,17 @@ class TPG(graph.Graph):
         visited.append(vertex)
 
         for edge in self._graph.out_edges(vertex):
-            found, subpath = self.dfs(edge[1], visited)
+            if (self.edge_has_failed(edge, failset)):
+                continue
+            found, subpath = self.dfs(edge[1], visited, failset)
             if (found):
                 return found, [vertex] + subpath
 
         return False, []
+
+    def edge_has_failed(self, edge, failset=[]):
+        src = str(edge[0]).split(':')[0]
+        dst = str(edge[1]).split(':')[0]
+        return ([src,dst] in failset or [dst,src] in failset)
 
 

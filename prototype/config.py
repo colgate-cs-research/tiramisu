@@ -287,9 +287,37 @@ class Router:
             result += ("\tSubnets: %s" % (','.join(self._subnets)))
         return result
 
+class Path:
+    def __init__(self, origin, endpoint, failset=[]):
+        self._origin = origin
+        self._endpoint = endpoint
+        self._failset = failset
+
+    @classmethod
+    def create(cls, path_json):
+        return Path(path_json["origin"], path_json["endpoint"],
+                (path_json["failset"] if "failset" in path_json else []))
+
+    @property
+    def origin(self):
+        return self._origin
+
+    @property
+    def endpoint(self):
+        return self._endpoint
+
+    @property
+    def failset(self):
+        return self._failset
+
+    def __str__(self):
+        return ("Path <origin=%s, endpoint=%s, failset=%s>" % (self._origin, 
+                self._endpoint, self._failset))
+
 class Network:
-    def __init__(self, routers):
+    def __init__(self, routers, paths):
         self._routers = routers
+        self._paths = paths
 
         # Link interfaces and BGP neighbors
         for router in self._routers.values():
@@ -319,12 +347,23 @@ class Network:
             router = Router.create(router_json)
             routers[router.name] = router
 
+        # Create paths
+        paths = []
+        if "paths" in network_json:
+            for path_json in network_json["paths"]:
+                paths.append(Path.create(path_json))
+
         # Create network
-        return Network(routers)
+        return Network(routers, paths)
 
     @property
     def routers(self):
         return self._routers
+
+    @property
+    def paths(self):
+        return self._paths
+
 
     def __str__(self):
         return '\n'.join([str(self._routers[n]) 

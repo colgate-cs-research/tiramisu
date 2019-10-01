@@ -14,10 +14,10 @@ def main():
             required=True, help='Path to network json')
     arg_parser.add_argument('-render', dest='render_path', action='store',
             required=True, help='Path to render graphs')
-    arg_parser.add_argument('-nsdi', dest='nsdi', action='store_true',
-            help='Render NSDI-style graphs')
-    arg_parser.add_argument('-prensdi', dest='prensdi', action='store_true',
-            help='Render pre-NSDI-style graphs')
+    arg_parser.add_argument('-rules', dest='rules', action='store',
+            help='Rules to follow', choices=["nsdi", "prensdi"])
+    arg_parser.add_argument('-paths', dest='paths', action='store_true',
+            help='Check paths')
     settings = arg_parser.parse_args()
     print("Settings: %s" % settings)
 
@@ -35,8 +35,10 @@ def main():
     for router in net.routers.values():
         subnets.update(router.subnets)
 
+    graphs = None
+
     # Create NSDI-style graphs
-    if (settings.nsdi):
+    if (settings.rules == "nsdi"):
         # Create RAGs
         rags = {} 
         for t in subnets:
@@ -55,9 +57,10 @@ def main():
                 rpg.render(os.path.join(settings.render_path, 
                     ('rpg_%s-%s.png') % pair))
                 rpgs[pair] = rpg
+        graphs = rpgs
 
     # Create pre-NSDI-style graphs
-    if (settings.prensdi):
+    elif (settings.rules == "prensdi"):
         # Create RPGs
         rpgs = {}
         for t in subnets:
@@ -70,18 +73,24 @@ def main():
                 rpg.render(os.path.join(settings.render_path, 
                     ('rpg_%s-%s.png') % pair))
                 rpgs[pair] = rpg
+
         # Create RPGs
         tpgs = {}
         for pair,rpg in rpgs.items():
             tpg = prensdi.TPG(net, rpg, pair)
             tpg.render(os.path.join(settings.render_path, 
                 ('tpg_%s-%s.png') % pair))
-            found, path = tpg.has_path()
-            print("%s -> %s? %s" % (pair[1], pair[0], found))
-            if (found):
-                print(path)
             tpgs[pair] = tpg
 
+        graphs = tpgs
+
+    if settings.paths and graphs is not None:
+        for p in net.paths:
+            g = graphs[(p.origin, p.endpoint)]
+            found, hops = g.has_path(p.failset)
+            print("%s %s" % (p, found))
+            if (found):
+                print('\t'+'\n\t'.join(hops))
 
 if __name__ == '__main__':
     main()
