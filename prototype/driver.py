@@ -46,6 +46,7 @@ def main():
             rag.taint()
             rag.render(os.path.join(settings.render_path, ('rag_%s.png' % t)))
             rags[t] = rag
+
         # Create RPGs
         rpgs = {}
         for t in subnets:
@@ -57,6 +58,7 @@ def main():
                 rpg.render(os.path.join(settings.render_path, 
                     ('rpg_%s-%s.png') % pair))
                 rpgs[pair] = rpg
+
         graphs = rpgs
 
     # Create pre-NSDI-style graphs

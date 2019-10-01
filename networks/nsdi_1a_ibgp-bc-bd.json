@@ -41,7 +41,8 @@
                 { "addr" : "10.0.4.1" }
             ],
             "internal": [
-                { "addr" : "10.0.11.1" }
+                { "addr" : "10.0.11.1" },
+                { "addr" : "10.0.12.1" }
             ]
         }
     },
@@ -75,8 +76,7 @@
         },
         "bgp" : {
             "internal" : [
-                { "addr" : "10.0.10.1" },
-                { "addr" : "10.0.12.1" }
+                { "addr" : "10.0.10.1" }
             ]
         },
         "subnets" : ["Y"]
@@ -101,21 +101,20 @@
         },
         "bgp" : {
             "internal": [
-                { "addr" : "10.0.11.1" }
+                { "addr" : "10.0.10.1" }
             ]
         },
         "subnets" : ["X"]
     }
     ],
     "paths": [
-        { "origin" : "Z", "endpoint" : "Y",
-          "failset" : [], "exists": true },
-        { "origin" : "Z", "endpoint" : "Y",
-          "failset" : [["b","c"]], "exists" : false },
-        { "origin" : "Z", "endpoint" : "X",
-          "failset" : [], "exists": false },
-        { "origin" : "Z", "endpoint" : "X",
-          "failset" : [["b","d"]], "exists": false }
-
+        { "origin" : "Z", "endpoint" : "Y", 
+          "failset" : [], "exists": true},
+        { "origin" : "Z", "endpoint" : "Y", 
+          "failset" : [["b","c"]], "exists" : true },
+        { "origin" : "Z", "endpoint" : "X", 
+          "failset" : [], "exists": true},
+        { "origin" : "Z", "endpoint" : "X", 
+          "failset" : [["b","d"]], "exists": true}
     ]
 }

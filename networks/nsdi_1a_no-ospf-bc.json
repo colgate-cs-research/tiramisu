@@ -32,8 +32,7 @@
         ],
         "ospf" : {
             "active": [
-                { "vlan" : 1 },
-                { "vlan" : 3 }
+                { "vlan" : 1 }
             ]
         },
         "bgp": {
@@ -69,8 +68,7 @@
         ],
         "ospf" : {
             "active": [
-                { "vlan" : 2 },
-                { "vlan" : 3 }
+                { "vlan" : 2 }
             ]
         },
         "bgp" : {
@@ -108,13 +106,13 @@
     }
     ],
     "paths": [
-        { "origin" : "Z", "endpoint" : "Y",
-          "failset" : [], "exists": true },
-        { "origin" : "Z", "endpoint" : "Y",
-          "failset" : [["b","c"]], "exists" : false },
-        { "origin" : "Z", "endpoint" : "X",
+        { "origin" : "Z", "endpoint" : "Y", 
           "failset" : [], "exists": false },
-        { "origin" : "Z", "endpoint" : "X",
+        { "origin" : "Z", "endpoint" : "Y", 
+          "failset" : [["b","c"]], "exists" : false },
+        { "origin" : "Z", "endpoint" : "X", 
+          "failset" : [], "exists": false },
+        { "origin" : "Z", "endpoint" : "X", 
           "failset" : [["b","d"]], "exists": false }
 
     ]

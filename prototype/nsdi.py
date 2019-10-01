@@ -159,8 +159,8 @@ class RPG(graph.Graph):
     def add_subnet_to_bgp_edges(self, router):
         if (self._t is not None and self._t in router.bgp.origins):
             for neighbor in router.bgp.neighbors:
-                print("Origin edge: %s -> %s" % 
-                        (self._t, self.bgp_name(neighbor)))
+#                print("Origin edge: %s -> %s" % 
+#                        (self._t, self.bgp_name(neighbor)))
                 self.add_edge(self._t, self.bgp_name(neighbor))
 
     def add_vlan_to_ospf_edges(self, router):
