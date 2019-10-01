@@ -15,9 +15,9 @@
                 { "vlan" : 1 },
                 { "vlan" : 3 }
             ],
-            "origins": ["X"]
+            "origins": ["Z"]
         },
-        "subnets" : ["X"]
+        "subnets" : ["Z"]
     },
     {
         "name": "b",
@@ -34,7 +34,7 @@
                 { "vlan" : 2 }
             ]
         },
-        "subnets" : ["Z"]
+        "subnets" : ["X"]
     },
     {
         "name": "c",
@@ -56,13 +56,13 @@
     }
     ],
     "paths": [
-        { "origin" : "X", "endpoint" : "Y",
+        { "origin" : "Z", "endpoint" : "Y",
           "failset" : [], "exists": true },
-        { "origin" : "X", "endpoint" : "Y",
+        { "origin" : "Z", "endpoint" : "Y",
           "failset" : [["a","c"]], "exists" : false },
-        { "origin" : "X", "endpoint" : "Z",
+        { "origin" : "Z", "endpoint" : "X",
           "failset" : [], "exists": true },
-        { "origin" : "X", "endpoint" : "Z",
+        { "origin" : "Z", "endpoint" : "X",
           "failset" : [["a","c"]], "exists" : false }
 
     ]

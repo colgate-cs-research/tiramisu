@@ -155,13 +155,13 @@ class RPG(graph.Graph):
         return False
 
     def vlan_name(self, vlan):
-        return "%s:VLAN:%d" % (vlan.router.name, vlan.num)
+        return "%s:V:%d" % (vlan.router.name, vlan.num)
 
     def ospf_name(self, vlan):
-        return "%s:OSPF:VLAN:%d" % (vlan.router.name, vlan.num)
+        return "%s:OSPF:V:%d" % (vlan.router.name, vlan.num)
 
     def bgp_name(self, vlan):
-        return "%s:BGP:VLAN:%d" % (vlan.router.name, vlan.num)
+        return "%s:BGP:V:%d" % (vlan.router.name, vlan.num)
 
     def taint(self):
         if (self._t is not None):
@@ -234,11 +234,11 @@ class TPG(graph.Graph):
             if vertex.attr["fontcolor"] == "purple":
                 self.add_vertex(vertex, subgraph=self._switch_sub)
             elif vertex.attr["fontcolor"] == "orange":
-                self.add_vertex("%s:IN" % vertex, subgraph=self._bgp_sub)
-                self.add_vertex("%s:OUT" % vertex, subgraph=self._bgp_sub)
+                self.add_vertex("%s:I" % vertex, subgraph=self._bgp_sub)
+                self.add_vertex("%s:O" % vertex, subgraph=self._bgp_sub)
             elif vertex.attr["fontcolor"] == "forestgreen":
-                self.add_vertex("%s:IN" % vertex, subgraph=self._ospf_sub)
-                self.add_vertex("%s:OUT" % vertex, subgraph=self._ospf_sub)
+                self.add_vertex("%s:I" % vertex, subgraph=self._ospf_sub)
+                self.add_vertex("%s:O" % vertex, subgraph=self._ospf_sub)
             elif vertex.attr["fontcolor"] == "red":
                 self.add_vertex(vertex, subgraph=self._subnet_sub)
 
@@ -250,16 +250,16 @@ class TPG(graph.Graph):
                 neighbor = iface.neighbor
                 if (neighbor.vlan.num == vlan.num):
                     if (neighbor.router.ospf is not None):
-                        if self.has_vertex(self.ospf_name(neighbor.vlan, "IN")):
+                        if self.has_vertex(self.ospf_name(neighbor.vlan, "I")):
                             self.add_edge(self.vlan_name(vlan),
-                                    self.ospf_name(neighbor.vlan, "IN"))
-                            self.add_edge(self.ospf_name(neighbor.vlan, "OUT"), 
+                                    self.ospf_name(neighbor.vlan, "I"))
+                            self.add_edge(self.ospf_name(neighbor.vlan, "O"), 
                                     self.vlan_name(vlan))
                     if (neighbor.router.bgp is not None):
-                        if self.has_vertex(self.bgp_name(neighbor.vlan, "IN")):
+                        if self.has_vertex(self.bgp_name(neighbor.vlan, "I")):
                             self.add_edge(self.vlan_name(vlan),
-                                    self.bgp_name(neighbor.vlan, "IN"))
-                            self.add_edge(self.bgp_name(neighbor.vlan, "OUT"), 
+                                    self.bgp_name(neighbor.vlan, "I"))
+                            self.add_edge(self.bgp_name(neighbor.vlan, "O"), 
                                     self.vlan_name(vlan))
                     if (neighbor.router.ospf is None 
                             and neighbor.router.bgp is None):
@@ -269,101 +269,101 @@ class TPG(graph.Graph):
 
     def add_intraospf_edges(self, router):
         for vlan in router.vlans.values():
-            if not self.has_vertex(self.ospf_name(vlan, "IN")):
+            if not self.has_vertex(self.ospf_name(vlan, "I")):
                 continue
             if (self._rpg.was_tainted_by_adjacency(vlan)):
 #                # Connect only to same VLAN
-#                self.add_edge(self.ospf_name(vlan, "IN"), 
-#                        self.ospf_name(vlan, "OUT"), color="forestgreen")
+#                self.add_edge(self.ospf_name(vlan, "I"), 
+#                        self.ospf_name(vlan, "O"), color="forestgreen")
                 # Connect across VLANs
                 for vlanB in router.vlans.values():
-                    if not self.has_vertex(self.ospf_name(vlanB, "IN")):
+                    if not self.has_vertex(self.ospf_name(vlanB, "I")):
                         continue
-                    self.add_edge(self.ospf_name(vlan, "IN"), 
-                            self.ospf_name(vlanB, "OUT"), color="forestgreen")
+                    self.add_edge(self.ospf_name(vlan, "I"), 
+                            self.ospf_name(vlanB, "O"), color="forestgreen")
 
 
     def add_intrabgp_edges(self, router):
         for vlan in router.vlans.values():
-            if not self.has_vertex(self.bgp_name(vlan, "IN")):
+            if not self.has_vertex(self.bgp_name(vlan, "I")):
                 continue
 #            # Connect only to same VLAN
-#            self.add_edge(self.bgp_name(vlan, "IN"), 
-#                    self.bgp_name(vlan, "OUT"), color="orange")
+#            self.add_edge(self.bgp_name(vlan, "I"), 
+#                    self.bgp_name(vlan, "O"), color="orange")
             # Connect across VLANs
             for vlanB in router.vlans.values():
-                if not self.has_vertex(self.bgp_name(vlanB, "IN")):
+                if not self.has_vertex(self.bgp_name(vlanB, "I")):
                     continue
-                self.add_edge(self.bgp_name(vlan, "IN"), 
-                        self.bgp_name(vlanB, "OUT"), color="orange")
+                self.add_edge(self.bgp_name(vlan, "I"), 
+                        self.bgp_name(vlanB, "O"), color="orange")
 
     def add_bgp_dependency(self, router):
         for vlan in router.vlans.values():
-            if ((not self.has_vertex(self.bgp_name(vlan, "IN")))
-                    or (not self.has_vertex(self.ospf_name(vlan, "IN")))):
+            if ((not self.has_vertex(self.bgp_name(vlan, "I")))
+                    or (not self.has_vertex(self.ospf_name(vlan, "I")))):
                 continue
-            self.add_edge(self.bgp_name(vlan, "OUT"), 
-                    self.ospf_name(vlan, "OUT"))
-            self.add_edge(self.ospf_name(vlan, "IN"), 
-                    self.bgp_name(vlan, "IN"))
+            self.add_edge(self.bgp_name(vlan, "O"), 
+                    self.ospf_name(vlan, "O"))
+            self.add_edge(self.ospf_name(vlan, "I"), 
+                    self.bgp_name(vlan, "I"))
 
     def add_ospf_adjacencies(self, router):
         for vlan in router.ospf.active_vlans:
-            if not self.has_vertex(self.ospf_name(vlan, "OUT")):
+            if not self.has_vertex(self.ospf_name(vlan, "O")):
                 continue
             for adjacent in self._rpg._l2.get_adjacent_vlans(vlan):
                 if ((adjacent.router.ospf is not None)
-                        and self.has_vertex(self.ospf_name(adjacent, "IN"))):
-                    self.add_edge(self.ospf_name(vlan, "OUT"), 
-                            self.ospf_name(adjacent, "IN"), color="forestgreen")
+                        and self.has_vertex(self.ospf_name(adjacent, "I"))):
+                    self.add_edge(self.ospf_name(vlan, "O"), 
+                            self.ospf_name(adjacent, "I"), color="forestgreen")
 
     def add_bgp_adjacencies(self, router):
         for neighbor in router.bgp.neighbors:
             for vlan in router.vlans.values():
                 if neighbor.addr not in vlan.addr.network:
                     continue
-                if not self.has_vertex(self.bgp_name(vlan, "OUT")):
+                if not self.has_vertex(self.bgp_name(vlan, "O")):
                     continue
                 for iface in vlan.ifaces:
                     if ((iface.neighbor.router == neighbor.iface.router)
                             and self.has_vertex(
-                                self.bgp_name(neighbor.iface, "IN"))):
-                        self.add_edge(self.bgp_name(vlan, "OUT"),
-                                self.bgp_name(neighbor.iface, "IN"),
+                                self.bgp_name(neighbor.iface, "I"))):
+                        self.add_edge(self.bgp_name(vlan, "O"),
+                                self.bgp_name(neighbor.iface, "I"),
                                 combine=False, color="orange")
 
     def add_src_to_ospf_edges(self, router):
         for vlan in router.vlans.values():
-            if not self.has_vertex(self.ospf_name(vlan, "IN")):
+            if not self.has_vertex(self.ospf_name(vlan, "I")):
                 continue
-            self.add_edge(self._s, self.ospf_name(vlan, "IN"))
+            self.add_edge(self._s, self.ospf_name(vlan, "I"))
 
     def add_src_to_bgp_edges(self, router):
         for vlan in router.vlans.values():
-            if not self.has_vertex(self.bgp_name(vlan, "IN")):
+            if not self.has_vertex(self.bgp_name(vlan, "I")):
                 continue
-            self.add_edge(self._s, self.bgp_name(vlan, "IN"))
+            self.add_edge(self._s, self.bgp_name(vlan, "I"))
 
     def add_ospf_to_dst_edges(self, router):
         for vlan in router.vlans.values():
-            if not self.has_vertex(self.ospf_name(vlan, "OUT")):
+            if not self.has_vertex(self.ospf_name(vlan, "O")):
                 continue
-            self.add_edge(self.ospf_name(vlan, "OUT"), self._t)
+            self.add_edge(self.ospf_name(vlan, "O"), self._t)
 
     def add_bgp_to_dst_edges(self, router):
         for vlan in router.vlans.values():
-            if not self.has_vertex(self.bgp_name(vlan, "OUT")):
+            if not self.has_vertex(self.bgp_name(vlan, "O")):
                 continue
-            self.add_edge(self.bgp_name(vlan, "OUT"), self._t)
+            self.add_edge(self.bgp_name(vlan, "O"), self._t)
 
     def vlan_name(self, vlan):
-        return "%s:VLAN:%d" % (vlan.router.name, vlan.num)
+        return "%s:V:%d" % (vlan.router.name, vlan.num)
 
     def ospf_name(self, vlan, inout):
-        return "%s:OSPF:VLAN:%d:%s" % (vlan.router.name, vlan.num, inout)
+        return "%s:OSPF:V:%d:%s" % (vlan.router.name, vlan.num, inout)
 
     def bgp_name(self, vlan, inout):
-        return "%s:BGP:VLAN:%d:%s" % (vlan.router.name, vlan.num, inout)
+        return "%s:BGP:V:%d:%s" % (vlan.router.name, vlan.num, inout)
 
     
     def has_path(self, failset=[]):
