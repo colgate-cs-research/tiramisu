@@ -1,0 +1,69 @@
+{
+    "routers": [
+    {
+        "name": "a",
+        "ifaces": [
+            { "vlan": 1, "neighbor": "b" },
+            { "vlan": 3, "neighbor": "c" }
+        ],
+        "vlans": [
+            { "num": 1, "addr": "10.0.1.1/24" },
+            { "num": 3, "addr": "10.0.3.1/24" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 1 },
+                { "vlan" : 3 }
+            ],
+            "origins": ["X"]
+        },
+        "subnets" : ["X"]
+    },
+    {
+        "name": "b",
+        "ifaces": [
+            { "vlan": 1, "neighbor": "a" },
+            { "vlan": 2, "neighbor": "c" }
+        ],
+        "vlans": [
+            { "num": 1, "addr": "10.0.1.2/24" },
+            { "num": 2, "addr": "10.0.2.2/24" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 2 }
+            ]
+        },
+        "subnets" : ["Z"]
+    },
+    {
+        "name": "c",
+        "ifaces": [
+            { "vlan": 2, "neighbor": "b" },
+            { "vlan": 3, "neighbor": "a" }
+        ],
+        "vlans": [
+            { "num": 2, "addr": "10.0.2.3/24" },
+            { "num": 3, "addr": "10.0.3.3/24" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 2 },
+                { "vlan" : 3 }
+            ]
+        },
+        "subnets" : ["Y"]
+    }
+    ],
+    "paths": [
+        { "origin" : "X", "endpoint" : "Y",
+          "failset" : [], "exists": true },
+        { "origin" : "X", "endpoint" : "Y",
+          "failset" : [["a","c"]], "exists" : false },
+        { "origin" : "X", "endpoint" : "Z",
+          "failset" : [], "exists": true },
+        { "origin" : "X", "endpoint" : "Z",
+          "failset" : [["a","c"]], "exists" : false }
+
+    ]
+}

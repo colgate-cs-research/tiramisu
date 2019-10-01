@@ -146,13 +146,11 @@ class RPG(graph.Graph):
     def was_tainted_by_adjacency(self, vlan):
         vertex = self.get_vertex(self.ospf_name(vlan))
         for edge in self._graph.in_edges(vertex):
-            if not (("OSPF" in edge[0]) and ("OSPF" in edge[1])):
-                continue
             routerA = edge[0].split(':')[0]
-            routerB = edge[0].split(':')[0]
+            routerB = edge[1].split(':')[0]
             if (routerA == routerB):
                 continue
-            if (edge.attr["color"] == "red"):
+            if (edge.attr["color"] == "red" and edge.attr["style"] != "dashed"):
                 return True
         return False
 
@@ -227,9 +225,6 @@ class TPG(graph.Graph):
                 if (self._t in router.subnets):
                     self.add_bgp_to_dst_edges(router)
 
-            # TODO: Add subnet edges
-
-
     def add_vertices_based_on_taints(self):
         for vertex in self._rpg._graph.nodes():
             # Ignore untainted vertices
@@ -277,8 +272,16 @@ class TPG(graph.Graph):
             if not self.has_vertex(self.ospf_name(vlan, "IN")):
                 continue
             if (self._rpg.was_tainted_by_adjacency(vlan)):
-                self.add_edge(self.ospf_name(vlan, "IN"), 
-                        self.ospf_name(vlan, "OUT"), color="forestgreen")
+#                # Connect only to same VLAN
+#                self.add_edge(self.ospf_name(vlan, "IN"), 
+#                        self.ospf_name(vlan, "OUT"), color="forestgreen")
+                # Connect across VLANs
+                for vlanB in router.vlans.values():
+                    if not self.has_vertex(self.ospf_name(vlanB, "IN")):
+                        continue
+                    self.add_edge(self.ospf_name(vlan, "IN"), 
+                            self.ospf_name(vlanB, "OUT"), color="forestgreen")
+
 
     def add_intrabgp_edges(self, router):
         for vlan in router.vlans.values():
