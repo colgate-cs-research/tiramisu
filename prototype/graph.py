@@ -45,9 +45,22 @@ class Graph:
 class Physical(Graph):
     def __init__(self, net):
         super().__init__(net)
+
+        self._iface_sub = self.add_subgraph("iface", color="blue")
+        self._subnet_sub = self.add_subgraph("subnet", color="red")
+
+        for router in net.routers.values():
+            self.add_vertex(router.name, subgraph=self._iface_sub)
+            for subnet in router.subnets:
+                self.add_vertex(subnet, subgraph=self._subnet_sub)
+
         for router in net.routers.values():
             for iface in router.ifaces.values():
-                self.add_edge(router.name, iface.neighbor.router.name, True)
+                self.add_edge(router.name, iface.neighbor.router.name, True,
+                        color="blue")
+            for subnet in router.subnets:
+                self.add_edge(subnet, router.name, True, color="red")
+
 
 class Layer2(Graph):
     def __init__(self, net):
@@ -121,5 +134,63 @@ class Layer2(Graph):
                 adjacent.append(self._net.routers[router].vlans[int(num)])
         return adjacent
 
+class Ospf(Graph):
+    def __init__(self, net, l2):
+        super().__init__(net)
+        self._l2 = l2
+
+        self._ospf_sub = self.add_subgraph("ospf", color="forestgreen")
+        self._subnet_sub = self.add_subgraph("subnet", color="red")
+
+        for router in net.routers.values():
+            if router.ospf is None:
+                continue
+
+            self.add_vertex(router.name, subgraph=self._ospf_sub)
+            for subnet in router.ospf.origins:
+                self.add_vertex(subnet, subgraph=self._subnet_sub)
+
+        for router in net.routers.values():
+            if router.ospf is None:
+                continue
+
+            for vlan in router.ospf.active_vlans:
+                for adjacent in self._l2.get_adjacent_vlans(vlan):
+                    if (adjacent.router.ospf is not None):
+                        self.add_edge(router.name, adjacent.router.name, 
+                                color="forestgreen", combine=True)
+
+            for subnet in router.ospf.origins:
+                self.add_edge(subnet, router.name, color="red")
+
+
+class Bgp(Graph):
+    def __init__(self, net):
+        super().__init__(net)
+
+        self._bgp_sub = self.add_subgraph("bgp", color="orange")
+        self._subnet_sub = self.add_subgraph("subnet", color="red")
+
+        for router in net.routers.values():
+            if router.bgp is None:
+                continue
+
+            self.add_vertex(router.name, subgraph=self._bgp_sub)
+            for subnet in router.bgp.origins:
+                self.add_vertex(subnet, subgraph=self._subnet_sub)
+
+        for router in net.routers.values():
+            if router.bgp is None:
+                continue
+
+            for neighbor in router.bgp.external:
+                self.add_edge(router.name, neighbor.iface.router.name, 
+                        color="orange", combine=True)
+            for neighbor in router.bgp.internal:
+                self.add_edge(router.name, neighbor.iface.router.name, 
+                        color="orange", combine=True, style="dashed")
+
+            for subnet in router.bgp.origins:
+                self.add_edge(subnet, router.name, color="red")
 
 

@@ -29,6 +29,10 @@ def main():
     phy.render(os.path.join(settings.render_path, 'physical.png'))
     l2 = graph.Layer2(net)
     l2.render(os.path.join(settings.render_path, 'layer2.png'))
+    ospf = graph.Ospf(net, l2)
+    ospf.render(os.path.join(settings.render_path, 'ospf.png'))
+    bgp = graph.Bgp(net)
+    bgp.render(os.path.join(settings.render_path, 'bgp.png'))
 
     # Determine subnets
     subnets = set()
