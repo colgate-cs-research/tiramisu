@@ -195,3 +195,30 @@ class RPG(graph.Graph):
     def bgp_name(self, neighbor):
         return "%s:BGP:%s" % (neighbor.bgp.router.name, 
                 neighbor.iface.router.name)
+
+    def has_path(self, failset=[]):
+        vertex = self.get_vertex(self._t)
+        return self.dfs(vertex, [], failset)
+
+    def dfs(self, vertex, visited, failset):
+        if (vertex == self.get_vertex(self._s)):
+            return True, [vertex]
+
+        if (vertex in visited):
+            return False, []
+        visited.append(vertex)
+
+        for edge in self._graph.out_edges(vertex):
+            if (self.edge_has_failed(edge, failset)):
+                continue
+            found, subpath = self.dfs(edge[1], visited, failset)
+            if (found):
+                return found, [vertex] + subpath
+
+        return False, []
+
+    def edge_has_failed(self, edge, failset=[]):
+        src = str(edge[0]).split(':')[0]
+        dst = str(edge[1]).split(':')[0]
+        return ([src,dst] in failset or [dst,src] in failset)
+

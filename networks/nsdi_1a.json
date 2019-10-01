@@ -107,7 +107,9 @@
     }
     ],
     "paths": [
-        { "origin" : "Z", "endpoint" : "Y", "failset" : [] },
-        { "origin" : "Z", "endpoint" : "Y", "failset" : [["b","c"]] }
+        { "origin" : "Z", "endpoint" : "Y", 
+          "failset" : [], "exists": true},
+        { "origin" : "Z", "endpoint" : "Y", 
+          "failset" : [["b","c"]], "exists" : false }
     ]
 }
