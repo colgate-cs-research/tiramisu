@@ -294,10 +294,16 @@ class TPG(graph.Graph):
                 self.add_edge(self.bgp_name(neighbor), 
                         self.vlan_name(matching_vlan), 
                         label=neighbor.import_policy)
+                if (neighbor.import_policy is not None):
+                    print("%s->%s %s" % (self.bgp_name(neighbor), 
+                        self.vlan_name(matching_vlan), neighbor.import_policy))
             elif (router.ospf is not None):
                 self.add_edge(self.bgp_name(neighbor), 
                         self.ospf_name(router),
                         label=neighbor.import_policy)
+                if (neighbor.import_policy is not None):
+                    print("%s->%s %s" % (self.bgp_name(neighbor), 
+                        self.ospf_name(router), neighbor.import_policy))
 
     def add_subnet_to_ospf_edges(self, router):
         if (self._s is not None 
@@ -393,12 +399,15 @@ class TPG(graph.Graph):
         bestsign[dst] = {'lp':0,'len':0,'cost':0}
         
         change = True
+        i = 0
 
         # Line 4
         while change:
+            i += 1
 
-#            print(bestpath)
-#            print(bestsign)
+#            print('ROUND %d' % i)
+#            for v in sorted(bestpath.keys()):
+#                print('\t%s %s' % (bestpath[v], bestsign[v]))
 
             change = False
 
@@ -424,7 +433,8 @@ class TPG(graph.Graph):
                         sign[u][v] = self.sign_combine(L, bestsign[v])
 
                 # Line 9
-                newbestpath, newbestsign = self.path_rank(u, path[u], sign[u])
+                newbestpath, newbestsign = self.path_rank(u, path[u], sign[u],
+                        bestpath[u], bestsign[u])
 
                 # Line 10
                 if newbestpath != bestpath[u] or newbestsign != bestsign[u]:
@@ -437,6 +447,7 @@ class TPG(graph.Graph):
                     change = True
 
         src = self.get_vertex(self._s)
+#        print(bestsign)
         return (bestpath[src], bestsign[src])
 
     def sign_combine(self, label, sign):
@@ -449,9 +460,7 @@ class TPG(graph.Graph):
 
         return newsign
 
-    def path_rank(self, u, paths, signs):
-        bestpath = None
-        bestsign = None
+    def path_rank(self, u, paths, signs, bestpath, bestsign):
         for v,sign in signs.items():
             if (sign is None):
                 continue
@@ -466,10 +475,10 @@ class TPG(graph.Graph):
                     bestpath = paths[v]
             elif ("BGP" in str(u)):
                 if (sign['lp'] > bestsign['lp'] 
-                        or sign['len'] < bestsign['len']):
+                        or (sign['lp'] == bestsign['lp'] 
+                            and sign['len'] < bestsign['len'])):
                     bestsign = sign
                     bestpath = paths[v]
-
 
         return bestpath, bestsign
 
