@@ -15,8 +15,8 @@
         },
         "bgp": {
             "internal": [
-                { "addr" : "10.0.2.3", "import_policy": "LP=20" },
-                { "addr" : "10.0.1.5", "import_policy": "LP=10" }
+                { "addr" : "10.0.2.3", "import_policy": {"lp": 20} },
+                { "addr" : "10.0.1.5", "import_policy": {"lp": 10} }
             ]
         },
         "subnets": ["Y"]

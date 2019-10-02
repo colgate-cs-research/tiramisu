@@ -30,12 +30,13 @@ class Graph:
         return self._graph.has_node(name)
 
     def add_edge(self, src, dst, combine=False, color='black', style='solid',
-            label='', headlabel='', taillabel=''):
+            label=None, headlabel='', taillabel=''):
         if (combine and self._graph.has_edge(dst, src)):
             self._graph.get_edge(dst, src).attr['dir'] = 'both'
         else:
             self._graph.add_edge(src, dst, color=color, fontcolor=color,
-                    style=style, label=label, headlabel=headlabel,
+                    style=style, label=('' if label is None else label), 
+                    headlabel=headlabel,
                     taillabel=taillabel)
 
     def has_edge(self, src, dst, either=False):
@@ -165,11 +166,94 @@ class Ospf(Graph):
                 for adjacent in self._l2.get_adjacent_vlans(vlan):
                     if (adjacent.router.ospf is not None):
                         self.add_edge(router.name, adjacent.router.name, 
-                                color="forestgreen", combine=True)
+                                color="forestgreen", label={'cost':1})
 
             for subnet in router.ospf.origins:
-                self.add_edge(subnet, router.name, color="red")
+                self.add_edge(router.name, subnet, color="red")
 
+    def tpvp(self, t):
+        # Line 2
+        path = {}
+        sign = {}
+        bestpath = {}
+        bestsign = {}
+        for u in self._graph.nodes():
+            path[u] = {}
+            sign[u] = {}
+            bestpath[u] = None
+            bestsign[u] = None
+            for v in self._graph.out_neighbors(u):
+                path[u][v] = None
+                sign[u][v] = None
+
+        # Line 3
+        dst = self.get_vertex(t)
+        bestpath[dst] = [t]
+        bestsign[dst] = {'cost':0}
+        
+        change = True
+
+        # Line 4
+        while change:
+
+            print(bestpath)
+            print(bestsign)
+
+            change = False
+
+            # Line 5
+            for u in self._graph.nodes():
+
+                if (u == dst): 
+                    continue
+
+                # Line 6
+                for e in self._graph.out_edges(u):
+                    v = e[1]
+
+                    if (bestpath[v] is not None):
+
+                        # Line 7
+                        path[u][v] = [u] + bestpath[v]
+
+                        # Line 8
+                        L = {}
+                        if "label" in e.attr and e.attr["label"] != '':
+                            L = eval(e.attr["label"])
+                        sign[u][v] = self.sign_combine(L, bestsign[v])
+
+                # Line 9
+                newbestpath, newbestsign = self.path_rank(path[u], sign[u])
+
+                # Line 10
+                if newbestpath != bestpath[u] or newbestsign != bestsign[u]:
+
+                    print("CHANGE: %s" % u)
+                    bestpath[u] = newbestpath
+                    bestsign[u] = newbestsign
+
+                    # Line 11
+                    change = True
+
+        print("TPVP:")
+        print(bestpath)
+        print(bestsign)
+
+    def sign_combine(self, label, sign):
+        return {'cost' : 
+                (label['cost'] if 'cost' in label else 0) 
+                    + (sign['cost'] if 'cost' in sign else 0)}
+
+    def path_rank(self, paths, signs):
+        bestpath = None
+        bestsign = None
+        for v,sign in signs.items():
+            if (sign is not None 
+                    and (bestsign is None or sign['cost'] < bestsign['cost'])):
+                bestsign = sign
+                bestpath = paths[v]
+
+        return bestpath, bestsign
 
 class Bgp(Graph):
     def __init__(self, net):

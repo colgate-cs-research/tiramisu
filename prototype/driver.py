@@ -115,7 +115,9 @@ def main():
             found, hops = g.has_path(p.failset)
             print("%s %s" % (p, found))
             if (found):
-                print('\t'+'\n\t'.join(hops))
+                bestpath, bestsign = g.tpvp()
+                print('\t'+str(bestsign))
+                print('\t'+'\n\t'.join(bestpath))
 
 if __name__ == '__main__':
     main()

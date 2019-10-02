@@ -315,7 +315,8 @@ class TPG(graph.Graph):
                 if ((adjacent.router.ospf is not None)
                         and self.has_vertex(self.ospf_name(adjacent, "I"))):
                     self.add_edge(self.ospf_name(vlan, "O"), 
-                            self.ospf_name(adjacent, "I"), color="forestgreen")
+                            self.ospf_name(adjacent, "I"), color="forestgreen",
+                            label={"cost":1})
 
     def add_bgp_adjacencies(self, router):
         for neighbor in router.bgp.neighbors:

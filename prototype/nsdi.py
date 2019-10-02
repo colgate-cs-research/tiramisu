@@ -136,7 +136,8 @@ class RPG(graph.Graph):
 
     def add_ospf_to_vlan_edges(self, router):
         for vlan in router.ospf.active_vlans:
-            self.add_edge(self.ospf_name(router), self.vlan_name(vlan))
+            self.add_edge(self.ospf_name(router), self.vlan_name(vlan),
+                    label={"cost":1})
 
     def add_bgp_to_vlan_ospf_edges(self, router):
         for neighbor in router.bgp.neighbors:
@@ -279,7 +280,8 @@ class TPG(graph.Graph):
 
     def add_ospf_to_vlan_edges(self, router):
         for vlan in router.ospf.active_vlans:
-            self.add_edge(self.ospf_name(router), self.vlan_name(vlan))
+            self.add_edge(self.ospf_name(router), self.vlan_name(vlan),
+                    label={"cost":1})
 
     def add_bgp_to_vlan_ospf_edges(self, router):
         for neighbor in router.bgp.neighbors:
@@ -290,10 +292,12 @@ class TPG(graph.Graph):
                     break
             if (matching_vlan):
                 self.add_edge(self.bgp_name(neighbor), 
-                        self.vlan_name(matching_vlan))
+                        self.vlan_name(matching_vlan), 
+                        label=neighbor.import_policy)
             elif (router.ospf is not None):
                 self.add_edge(self.bgp_name(neighbor), 
-                        self.ospf_name(router))
+                        self.ospf_name(router),
+                        label=neighbor.import_policy)
 
     def add_subnet_to_ospf_edges(self, router):
         if (self._s is not None 
@@ -367,4 +371,106 @@ class TPG(graph.Graph):
         src = str(edge[0]).split(':')[0]
         dst = str(edge[1]).split(':')[0]
         return ([src,dst] in failset or [dst,src] in failset)
+
+    def tpvp(self):
+        # Line 2
+        path = {}
+        sign = {}
+        bestpath = {}
+        bestsign = {}
+        for u in self._graph.nodes():
+            path[u] = {}
+            sign[u] = {}
+            bestpath[u] = None
+            bestsign[u] = None
+            for v in self._graph.out_neighbors(u):
+                path[u][v] = None
+                sign[u][v] = None
+
+        # Line 3
+        dst = self.get_vertex(self._t)
+        bestpath[dst] = [dst]
+        bestsign[dst] = {'lp':0,'len':0,'cost':0}
+        
+        change = True
+
+        # Line 4
+        while change:
+
+#            print(bestpath)
+#            print(bestsign)
+
+            change = False
+
+            # Line 5
+            for u in self._graph.nodes():
+
+                if (u == dst): 
+                    continue
+
+                # Line 6
+                for e in self._graph.out_edges(u):
+                    v = e[1]
+
+                    if (bestpath[v] is not None and u not in bestpath[v]):
+
+                        # Line 7
+                        path[u][v] = [u] + bestpath[v]
+
+                        # Line 8
+                        L = {}
+                        if "label" in e.attr and e.attr["label"] != '':
+                            L = eval(e.attr["label"])
+                        sign[u][v] = self.sign_combine(L, bestsign[v])
+
+                # Line 9
+                newbestpath, newbestsign = self.path_rank(u, path[u], sign[u])
+
+                # Line 10
+                if newbestpath != bestpath[u] or newbestsign != bestsign[u]:
+
+#                    print("CHANGE: %s" % u)
+                    bestpath[u] = newbestpath
+                    bestsign[u] = newbestsign
+
+                    # Line 11
+                    change = True
+
+        src = self.get_vertex(self._s)
+        return (bestpath[src], bestsign[src])
+
+    def sign_combine(self, label, sign):
+        newsign = sign.copy()
+        for k,v in label.items():
+            if k == 'cost' or k == 'len':
+                newsign[k] = v + (newsign[k] if k in newsign else 0)
+            elif k == 'lp':
+                newsign[k] = v
+
+        return newsign
+
+    def path_rank(self, u, paths, signs):
+        bestpath = None
+        bestsign = None
+        for v,sign in signs.items():
+            if (sign is None):
+                continue
+
+            if (bestsign is None):
+                bestsign = sign
+                bestpath = paths[v]
+
+            if ("OSPF" in str(u)):
+                if (sign['cost'] < bestsign['cost']):
+                    bestsign = sign
+                    bestpath = paths[v]
+            elif ("BGP" in str(u)):
+                if (sign['lp'] > bestsign['lp'] 
+                        or sign['len'] < bestsign['len']):
+                    bestsign = sign
+                    bestpath = paths[v]
+
+
+        return bestpath, bestsign
+
 
