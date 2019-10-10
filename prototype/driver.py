@@ -15,7 +15,8 @@ def main():
     arg_parser.add_argument('-render', dest='render_path', action='store',
             required=True, help='Path to render graphs')
     arg_parser.add_argument('-rules', dest='rules', action='store',
-            help='Rules to follow', choices=["nsdi", "prensdi", "nsditpg"])
+            help='Rules to follow',
+            choices=["nsdi", "prensdi", "nsditpg", "prensdimod"])
     arg_parser.add_argument('-paths', dest='paths', action='store_true',
             help='Check paths')
     settings = arg_parser.parse_args()
@@ -45,7 +46,7 @@ def main():
     graphs = None
 
     # Create NSDI-style graphs
-    if (settings.rules == "nsdi" or settings.rules == "nsditpg"):
+    if (settings.rules.startswith("nsdi")):
         # Create RAGs
         rags = {} 
         for t in subnets:
@@ -85,7 +86,7 @@ def main():
 
 
     # Create pre-NSDI-style graphs
-    elif (settings.rules == "prensdi"):
+    elif (settings.rules.startswith("prensdi")):
         # Create RPGs
         rpgs = {}
         for t in subnets:
@@ -93,7 +94,10 @@ def main():
                 if (s == t):
                     continue
                 pair = (t, s)
-                rpg = prensdi.RPG(net, l2, pair)
+                if (settings.rules == "prensdimod"):
+                    rpg = prensdi.RPGMod(net, l2, pair)
+                else:
+                    rpg = prensdi.RPG(net, l2, pair)
                 rpg.taint()
                 rpg.render(os.path.join(settings.render_path, 
                     ('rpg_%s-%s.png') % pair))
@@ -102,7 +106,10 @@ def main():
         # Create RPGs
         tpgs = {}
         for pair,rpg in rpgs.items():
-            tpg = prensdi.TPG(net, rpg, pair)
+            if (settings.rules == "prensdimod"):
+                tpg = prensdi.TPGMod(net, rpg, pair)
+            else:
+                tpg = prensdi.TPG(net, rpg, pair)
             tpg.render(os.path.join(settings.render_path, 
                 ('tpg_%s-%s.png') % pair))
             tpgs[pair] = tpg
