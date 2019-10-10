@@ -411,10 +411,11 @@ class TPGMod(graph.TPG):
 
     def add_vlan_to_vlan_edges(self, router):
         for vlan in router.vlans.values():
+            self.add_edge(self.vlan_name(vlan, "I"),
+                    self.vlan_name(vlan, "O"))
             for iface in vlan.ifaces:
                 self.add_edge(self.vlan_name(vlan, "O"),
                         self.vlan_name(iface.neighbor.vlan, "I"))
-
     def add_ospf_to_vlan_edges(self, router):
         for vlan in router.ospf.active_vlans:
             self.add_edge(self.ospf_name(router), self.vlan_name(vlan, "O"),

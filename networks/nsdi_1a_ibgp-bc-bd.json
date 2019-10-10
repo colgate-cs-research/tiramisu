@@ -10,7 +10,7 @@
         ],
         "bgp" : {
             "external": [
-                { "addr" : "10.0.4.2" }
+                { "addr" : "10.0.4.2", "import_policy": {"len":1, "lp": 100} }
             ],
             "origins": ["Z"]
         },
@@ -38,7 +38,7 @@
         },
         "bgp": {
             "external": [
-                { "addr" : "10.0.4.1" }
+                { "addr" : "10.0.4.1", "import_policy": {"len":1, "lp": 100} }
             ],
             "internal": [
                 { "addr" : "10.0.11.1" },
@@ -115,6 +115,6 @@
         { "origin" : "Z", "endpoint" : "X", 
           "failset" : [], "exists": true},
         { "origin" : "Z", "endpoint" : "X", 
-          "failset" : [["b","d"]], "exists": true}
+          "failset" : [["b","d"], ["b", "s1"]], "exists": true}
     ]
 }
