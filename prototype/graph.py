@@ -373,7 +373,7 @@ class TPG(Graph):
         dst = str(edge[1]).split(':')[0]
         return ([src,dst] in failset or [dst,src] in failset)
 
-    def tpvp(self, verbose=False):
+    def tpvp(self, verbose=False, failset=[]):
         # Line 2
         path = {}
         sign = {}
@@ -418,6 +418,9 @@ class TPG(Graph):
 
                 # Line 6
                 for e in self._graph.out_edges(u):
+                    if self.edge_has_failed(e, failset):
+                        continue
+
                     v = e[1]
 
                     if (bestpath[v] is not None and u not in bestpath[v]):

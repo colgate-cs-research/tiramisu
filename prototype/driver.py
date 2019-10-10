@@ -127,7 +127,7 @@ def main():
             found, hops = g.has_path(p.failset)
             print("%s %s" % (p, found))
             if (found):
-                bestpath, bestsign = g.tpvp(settings.verbose)
+                bestpath, bestsign = g.tpvp(settings.verbose, p.failset)
                 print('\t'+str(bestsign))
                 print('\t'+'\n\t'.join(bestpath))
 
