@@ -16,7 +16,7 @@ def main():
             required=True, help='Path to render graphs')
     arg_parser.add_argument('-rules', dest='rules', action='store',
             help='Rules to follow',
-            choices=["nsdi", "prensdi", "nsditpg", "prensdimod"])
+            choices=["nsdi", "prensdi", "nsditpg", "prensdimod", "nsdimod"])
     arg_parser.add_argument('-paths', dest='paths', action='store_true',
             help='Check paths')
     settings = arg_parser.parse_args()
@@ -69,7 +69,7 @@ def main():
                     rpgs[pair] = rpg
 
             graphs = rpgs
-        elif (settings.rules == "nsditpg"):
+        else:
             # Create TPGs
             tpgs = {}
             for t in subnets:
@@ -77,7 +77,10 @@ def main():
                     if (s == t):
                         continue
                     pair = (t, s)
-                    tpg = nsdi.TPG(net, pair, rags[t])
+                    if (settings.rules == "nsdimod"):
+                        tpg = nsdi.TPGMod(net, pair, rags[t])
+                    else:
+                        tpg = nsdi.TPG(net, pair, rags[t])
                     tpg.render(os.path.join(settings.render_path, 
                         ('tpg_%s-%s.png') % pair))
                     tpgs[pair] = tpg

@@ -37,7 +37,7 @@ class Graph:
             self._graph.add_edge(src, dst, color=color, fontcolor=color,
                     style=style, label=('' if label is None else label), 
                     headlabel=headlabel,
-                    taillabel=taillabel)
+                    taillabel=taillabel, fontsize=10.0)
 
     def has_edge(self, src, dst, either=False):
         return (self._graph.has_edge(src, dst) or
