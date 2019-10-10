@@ -12,8 +12,8 @@
         ],
         "bgp": {
             "external": [
-                { "addr": "10.0.1.4", "import_policy": {"len": 1} },
-                { "addr": "10.0.4.2", "import_policy": {"len": 1} }
+                { "addr": "10.0.1.4", "import_policy": {"len": 1, "lp": 100} },
+                { "addr": "10.0.4.2", "import_policy": {"len": 1, "lp": 100} }
             ],
             "origins": ["Z"]
         },
@@ -33,9 +33,9 @@
         ],
         "bgp": {
             "external": [
-                { "addr": "10.0.2.4", "import_policy": {"len": 1} },
-                { "addr": "10.0.4.1", "import_policy": {"len": 1} },
-                { "addr": "10.0.5.3", "import_policy": {"len": 1} }
+                { "addr": "10.0.2.4", "import_policy": {"len": 1, "lp": 100} },
+                { "addr": "10.0.4.1", "import_policy": {"len": 1, "lp": 100} },
+                { "addr": "10.0.5.3", "import_policy": {"len": 1, "lp": 100} }
             ]
         }
     },
@@ -51,8 +51,8 @@
         ],
         "bgp" : {
             "external" : [
-                { "addr": "10.0.3.4", "import_policy": {"len": 1} },
-                { "addr": "10.0.5.2", "import_policy": {"len": 1} }
+                { "addr": "10.0.3.4", "import_policy": {"len": 1, "lp": 100} },
+                { "addr": "10.0.5.2", "import_policy": {"len": 1, "lp": 100} }
             ]
         }
     },
@@ -70,9 +70,9 @@
         ],
         "bgp" : {
             "external": [
-                { "addr": "10.0.1.1", "import_policy": {"len": 1, "lp":50} },
-                { "addr": "10.0.2.2", "import_policy": {"len": 1, "lp":80} },
-                { "addr": "10.0.3.3", "import_policy": {"len": 1} }
+                { "addr": "10.0.1.1", "import_policy": {"len": 1, "lp": 50} },
+                { "addr": "10.0.2.2", "import_policy": {"len": 1, "lp": 80} },
+                { "addr": "10.0.3.3", "import_policy": {"len": 1, "lp": 100} }
             ]
         },
         "subnets": ["Y"]
