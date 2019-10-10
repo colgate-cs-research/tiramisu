@@ -48,8 +48,8 @@
         ],
         "bgp" : {
             "external": [
-                { "addr": "10.0.1.1", "import_policy": {"len": 1, "lp":50} },
-                { "addr": "10.0.2.2", "import_policy": {"len": 1, "lp":80} }
+                { "addr": "10.0.1.1", "import_policy": {"len": 1, "lp":150} },
+                { "addr": "10.0.2.2", "import_policy": {"len": 1, "lp":180} }
             ]
         },
         "subnets": ["Y"]
