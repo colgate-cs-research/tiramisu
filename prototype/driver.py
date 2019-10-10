@@ -19,6 +19,8 @@ def main():
             choices=["nsdi", "prensdi", "nsditpg", "prensdimod", "nsdimod"])
     arg_parser.add_argument('-paths', dest='paths', action='store_true',
             help='Check paths')
+    arg_parser.add_argument('-verbose', dest='verbose', action='store_true',
+            help='Verbose output')
     settings = arg_parser.parse_args()
     print("Settings: %s" % settings)
 
@@ -125,7 +127,7 @@ def main():
             found, hops = g.has_path(p.failset)
             print("%s %s" % (p, found))
             if (found):
-                bestpath, bestsign = g.tpvp()
+                bestpath, bestsign = g.tpvp(settings.verbose)
                 print('\t'+str(bestsign))
                 print('\t'+'\n\t'.join(bestpath))
 

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import pygraphviz
+from tabulate import tabulate
 
 class Graph:
     def __init__(self, net):
@@ -340,5 +341,150 @@ class Combined(Graph):
                 for subnet in router.bgp.origins:
                     self.add_edge(subnet, "%s:BGP" % router.name, color="red")
 
+class TPG(Graph):
+    def __init__(self, net, subnets):
+        super().__init__(net)
 
+        self._t, self._s = subnets
 
+    def has_path(self, failset=[]):
+        vertex = self.get_vertex(self._s)
+        return self.dfs(vertex, [], failset)
+
+    def dfs(self, vertex, visited, failset):
+        if (vertex == self.get_vertex(self._t)):
+            return True, [vertex]
+
+        if (vertex in visited):
+            return False, []
+        visited.append(vertex)
+
+        for edge in self._graph.out_edges(vertex):
+            if (self.edge_has_failed(edge, failset)):
+                continue
+            found, subpath = self.dfs(edge[1], visited, failset)
+            if (found):
+                return found, [vertex] + subpath
+
+        return False, []
+
+    def edge_has_failed(self, edge, failset=[]):
+        src = str(edge[0]).split(':')[0]
+        dst = str(edge[1]).split(':')[0]
+        return ([src,dst] in failset or [dst,src] in failset)
+
+    def tpvp(self, verbose=False):
+        # Line 2
+        path = {}
+        sign = {}
+        bestpath = {}
+        bestsign = {}
+        for u in self._graph.nodes():
+            path[u] = {}
+            sign[u] = {}
+            bestpath[u] = None
+            bestsign[u] = None
+            for v in self._graph.out_neighbors(u):
+                path[u][v] = None
+                sign[u][v] = None
+
+        # Line 3
+        dst = self.get_vertex(self._t)
+        bestpath[dst] = [dst]
+        bestsign[dst] = {'lp':0,'len':0,'cost':0}
+
+        change = True
+        i = 0
+
+        # Line 4
+        while change:
+            i += 1
+
+            if (verbose):
+                print('ROUND %d' % i)
+                table = [[v, (None if bestpath[v] is None else
+                        ' > '.join(bestpath[v])),
+                        bestsign[v]] for v in sorted(bestpath.keys())]
+                print(tabulate(table, headers=["Node", "Best path to %s" % dst,
+                        "Best signature"]))
+
+            change = False
+
+            # Line 5
+            for u in self._graph.nodes():
+
+                if (u == dst): 
+                    continue
+
+                # Line 6
+                for e in self._graph.out_edges(u):
+                    v = e[1]
+
+                    if (bestpath[v] is not None and u not in bestpath[v]):
+
+                        # Line 7
+                        path[u][v] = [u] + bestpath[v]
+
+                        # Line 8
+                        L = {}
+                        if "label" in e.attr and e.attr["label"] != '':
+                            L = eval(e.attr["label"])
+                        sign[u][v] = self.sign_combine(L, bestsign[v])
+
+                # Line 9
+                newbestpath, newbestsign = self.path_rank(u, path[u], sign[u],
+                        bestpath[u], bestsign[u])
+
+                # Line 10
+                if newbestpath != bestpath[u] or newbestsign != bestsign[u]:
+
+#                    print("CHANGE: %s" % u)
+                    bestpath[u] = newbestpath
+                    bestsign[u] = newbestsign
+
+                    # Line 11
+                    change = True
+
+                    # MODIFICATION: invalidate best path of upstream neighbors 
+                    # whose next hop is u
+                    for e in self._graph.in_edges(u):
+                        v = e[0]
+                        if bestpath[v] is not None and bestpath[v][1] == u:
+                            bestpath[v] = None
+                            bestsign[v] = None
+
+        src = self.get_vertex(self._s)
+#        print(bestsign)
+        return (bestpath[src], bestsign[src])
+
+    def sign_combine(self, label, sign):
+        newsign = sign.copy()
+        for k,v in label.items():
+            if k == 'cost' or k == 'len':
+                newsign[k] = v + (newsign[k] if k in newsign else 0)
+            elif k == 'lp':
+                newsign[k] = v
+
+        return newsign
+
+    def path_rank(self, u, paths, signs, bestpath, bestsign):
+        for v,sign in signs.items():
+            if (sign is None):
+                continue
+
+            if (bestsign is None):
+                bestsign = sign
+                bestpath = paths[v]
+
+            if ("OSPF" in str(u)):
+                if (sign['cost'] < bestsign['cost']):
+                    bestsign = sign
+                    bestpath = paths[v]
+            elif ("BGP" in str(u)):
+                if (sign['lp'] > bestsign['lp']
+                        or (sign['lp'] == bestsign['lp']
+                            and sign['len'] < bestsign['len'])):
+                    bestsign = sign
+                    bestpath = paths[v]
+
+        return bestpath, bestsign

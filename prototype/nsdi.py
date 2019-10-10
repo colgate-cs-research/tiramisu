@@ -223,15 +223,11 @@ class RPG(graph.Graph):
         dst = str(edge[1]).split(':')[0]
         return ([src,dst] in failset or [dst,src] in failset)
 
-class TPG(graph.Graph):
-    def __init__(self, net, subnets=None, rag=None):
-        super().__init__(net)
+class TPG(graph.TPG):
+    def __init__(self, net, subnets, rag):
+        super().__init__(net, subnets)
 
-        self._t = self._s = None
-        self._rag = None
-        if (subnets is not None):
-            self._t, self._s = subnets
-            self._rag = rag
+        self._rag = rag
 
         self._subnet_sub = self.add_subgraph("subnet", color="red")
         self._bgp_sub = self.add_subgraph("bgp", color="orange")
@@ -245,9 +241,8 @@ class TPG(graph.Graph):
             if (router.bgp is not None):
                 self.add_bgp_vertices(router)
 
-        if (self._t is not None):
-            self.add_vertex(self._t, subgraph=self._subnet_sub)
-            self.add_vertex(self._s, subgraph=self._subnet_sub)
+        self.add_vertex(self._t, subgraph=self._subnet_sub)
+        self.add_vertex(self._s, subgraph=self._subnet_sub)
 
         for router in net.routers.values():
             self.add_vlan_to_vlan_edges(router)
@@ -306,14 +301,12 @@ class TPG(graph.Graph):
                         self.ospf_name(router), neighbor.import_policy))
 
     def add_subnet_to_ospf_edges(self, router):
-        if (self._s is not None 
-                and self._rag.is_tainted(router.ospf)
+        if (self._rag.is_tainted(router.ospf)
                 and self._s in router.subnets):
             self.add_edge(self._s, self.ospf_name(router))
 
     def add_subnet_to_bgp_edges(self, router):
-        if (self._s is not None 
-                and self._rag.is_tainted(router.bgp)
+        if (self._rag.is_tainted(router.bgp)
                 and self._s in router.subnets):
             for neighbor in router.bgp.neighbors:
                 self.add_edge(self._s, self.bgp_name(neighbor))
@@ -352,145 +345,11 @@ class TPG(graph.Graph):
         return "%s:BGP:%s" % (neighbor.bgp.router.name, 
                 neighbor.iface.router.name)
 
-    def has_path(self, failset=[]):
-        vertex = self.get_vertex(self._s)
-        return self.dfs(vertex, [], failset)
+class TPGMod(graph.TPG):
+    def __init__(self, net, subnets, rag):
+        super().__init__(net, subnets)
 
-    def dfs(self, vertex, visited, failset):
-        if (vertex == self.get_vertex(self._t)):
-            return True, [vertex]
-
-        if (vertex in visited):
-            return False, []
-        visited.append(vertex)
-
-        for edge in self._graph.out_edges(vertex):
-            if (self.edge_has_failed(edge, failset)):
-                continue
-            found, subpath = self.dfs(edge[1], visited, failset)
-            if (found):
-                return found, [vertex] + subpath
-
-        return False, []
-
-    def edge_has_failed(self, edge, failset=[]):
-        src = str(edge[0]).split(':')[0]
-        dst = str(edge[1]).split(':')[0]
-        return ([src,dst] in failset or [dst,src] in failset)
-
-    def tpvp(self):
-        # Line 2
-        path = {}
-        sign = {}
-        bestpath = {}
-        bestsign = {}
-        for u in self._graph.nodes():
-            path[u] = {}
-            sign[u] = {}
-            bestpath[u] = None
-            bestsign[u] = None
-            for v in self._graph.out_neighbors(u):
-                path[u][v] = None
-                sign[u][v] = None
-
-        # Line 3
-        dst = self.get_vertex(self._t)
-        bestpath[dst] = [dst]
-        bestsign[dst] = {'lp':0,'len':0,'cost':0}
-        
-        change = True
-        i = 0
-
-        # Line 4
-        while change:
-            i += 1
-
-#            print('ROUND %d' % i)
-#            for v in sorted(bestpath.keys()):
-#                print('\t%s %s' % (bestpath[v], bestsign[v]))
-
-            change = False
-
-            # Line 5
-            for u in self._graph.nodes():
-
-                if (u == dst): 
-                    continue
-
-                # Line 6
-                for e in self._graph.out_edges(u):
-                    v = e[1]
-
-                    if (bestpath[v] is not None and u not in bestpath[v]):
-
-                        # Line 7
-                        path[u][v] = [u] + bestpath[v]
-
-                        # Line 8
-                        L = {}
-                        if "label" in e.attr and e.attr["label"] != '':
-                            L = eval(e.attr["label"])
-                        sign[u][v] = self.sign_combine(L, bestsign[v])
-
-                # Line 9
-                newbestpath, newbestsign = self.path_rank(u, path[u], sign[u],
-                        bestpath[u], bestsign[u])
-
-                # Line 10
-                if newbestpath != bestpath[u] or newbestsign != bestsign[u]:
-
-#                    print("CHANGE: %s" % u)
-                    bestpath[u] = newbestpath
-                    bestsign[u] = newbestsign
-
-                    # Line 11
-                    change = True
-
-        src = self.get_vertex(self._s)
-#        print(bestsign)
-        return (bestpath[src], bestsign[src])
-
-    def sign_combine(self, label, sign):
-        newsign = sign.copy()
-        for k,v in label.items():
-            if k == 'cost' or k == 'len':
-                newsign[k] = v + (newsign[k] if k in newsign else 0)
-            elif k == 'lp':
-                newsign[k] = v
-
-        return newsign
-
-    def path_rank(self, u, paths, signs, bestpath, bestsign):
-        for v,sign in signs.items():
-            if (sign is None):
-                continue
-
-            if (bestsign is None):
-                bestsign = sign
-                bestpath = paths[v]
-
-            if ("OSPF" in str(u)):
-                if (sign['cost'] < bestsign['cost']):
-                    bestsign = sign
-                    bestpath = paths[v]
-            elif ("BGP" in str(u)):
-                if (sign['lp'] > bestsign['lp'] 
-                        or (sign['lp'] == bestsign['lp'] 
-                            and sign['len'] < bestsign['len'])):
-                    bestsign = sign
-                    bestpath = paths[v]
-
-        return bestpath, bestsign
-
-class TPGMod(graph.Graph):
-    def __init__(self, net, subnets=None, rag=None):
-        super().__init__(net)
-
-        self._t = self._s = None
-        self._rag = None
-        if (subnets is not None):
-            self._t, self._s = subnets
-            self._rag = rag
+        self._rag = rag
 
         self._subnet_sub = self.add_subgraph("subnet", color="red")
         self._bgp_sub = self.add_subgraph("bgp", color="orange")
@@ -504,9 +363,8 @@ class TPGMod(graph.Graph):
             if (router.bgp is not None):
                 self.add_bgp_vertices(router)
 
-        if (self._t is not None):
-            self.add_vertex(self._t, subgraph=self._subnet_sub)
-            self.add_vertex(self._s, subgraph=self._subnet_sub)
+        self.add_vertex(self._t, subgraph=self._subnet_sub)
+        self.add_vertex(self._s, subgraph=self._subnet_sub)
 
         for router in net.routers.values():
             self.add_vlan_to_vlan_edges(router)
@@ -522,8 +380,13 @@ class TPGMod(graph.Graph):
                 self.add_vlan_to_bgp_edges(router)
 
     def add_vlan_vertices(self, router):
+        """
+        For each of a router's VLANs, create an incoming VLAN vertex and
+        outgoing VLAN vertex
+        """
         for vlan in router.vlans.values():
-            self.add_vertex(self.vlan_name(vlan), subgraph=self._vlan_sub)
+            self.add_vertex(self.vlan_name(vlan, "I"), subgraph=self._vlan_sub)
+            self.add_vertex(self.vlan_name(vlan, "O"), subgraph=self._vlan_sub)
 
     def add_ospf_vertices(self, router):
         self.add_vertex(self.ospf_name(router), subgraph=self._ospf_sub)
@@ -549,12 +412,12 @@ class TPGMod(graph.Graph):
     def add_vlan_to_vlan_edges(self, router):
         for vlan in router.vlans.values():
             for iface in vlan.ifaces:
-                self.add_edge(self.vlan_name(vlan),
-                        self.vlan_name(iface.neighbor.vlan))
+                self.add_edge(self.vlan_name(vlan, "O"),
+                        self.vlan_name(iface.neighbor.vlan, "I"))
 
     def add_ospf_to_vlan_edges(self, router):
         for vlan in router.ospf.active_vlans:
-            self.add_edge(self.ospf_name(router), self.vlan_name(vlan),
+            self.add_edge(self.ospf_name(router), self.vlan_name(vlan, "O"),
                     label={"cost":1})
 
     def add_bgp_to_vlan_ospf_edges(self, router):
@@ -571,22 +434,22 @@ class TPGMod(graph.Graph):
                     break
             if (matching_vlan):
                 self.add_edge(self.bgp_name(neighbor),
-                        self.vlan_name(matching_vlan),
+                        self.vlan_name(matching_vlan, "O"),
                         label=neighbor.import_policy)
                 if (neighbor.import_policy is not None):
                     print("%s->%s %s" % (self.bgp_name(neighbor),
-                        self.vlan_name(matching_vlan), neighbor.import_policy))
+                            self.vlan_name(matching_vlan, "O"), 
+                            neighbor.import_policy))
             elif (router.ospf is not None):
                 self.add_edge(self.bgp_name(neighbor),
                         self.ospf_name(router),
                         label=neighbor.import_policy)
                 if (neighbor.import_policy is not None):
                     print("%s->%s %s" % (self.bgp_name(neighbor),
-                        self.ospf_name(router), neighbor.import_policy))
+                            self.ospf_name(router), neighbor.import_policy))
 
     def add_subnet_to_ospf_edges(self, router):
-        if (self._s is not None
-                and self._rag.is_tainted(router.ospf)
+        if (self._rag.is_tainted(router.ospf)
                 and self._s in router.subnets):
             self.add_edge(self._s, self.ospf_name(router))
 
@@ -597,8 +460,7 @@ class TPGMod(graph.Graph):
         router's BGP vertex in the RAG being tainted), then connect source (S)
         to the "incoming" BGP vertex for the router
         """
-        if (self._s is not None
-                and self._rag.is_tainted(router.bgp)
+        if (self._rag.is_tainted(router.bgp)
                 and self._s in router.subnets):
             self.add_edge(self._s, self.bgp_name(router))
 
@@ -606,7 +468,7 @@ class TPGMod(graph.Graph):
         if (not self._rag.is_tainted(router.ospf)):
             return
         for vlan in router.vlans.values():
-            self.add_edge(self.vlan_name(vlan), self.ospf_name(router))
+            self.add_edge(self.vlan_name(vlan, "I"), self.ospf_name(router))
 
     def add_vlan_to_bgp_edges(self, router):
         """
@@ -618,7 +480,7 @@ class TPGMod(graph.Graph):
         if (not self._rag.is_tainted(router.bgp)):
             return
         for vlan in router.vlans.values():
-            self.add_edge(self.vlan_name(vlan), self.bgp_name(router))
+            self.add_edge(self.vlan_name(vlan, "I"), self.bgp_name(router))
 
     def add_vlan_to_subnet_edges(self, router):
         if ((router.ospf is not None
@@ -628,10 +490,10 @@ class TPGMod(graph.Graph):
                 and self._rag.is_tainted(router.bgp)
                 and self._t in router.bgp.origins)):
             for vlan in router.vlans.values():
-                self.add_edge(self.vlan_name(vlan), self._t)
+                self.add_edge(self.vlan_name(vlan, "I"), self._t)
 
-    def vlan_name(self, vlan):
-        return "%s:VLAN:%s" % (vlan.router.name, vlan.num)
+    def vlan_name(self, vlan, direction):
+        return "%s:VLAN:%s:%s" % (vlan.router.name, vlan.num, direction)
 
     def ospf_name(self, router):
         return "%s:OSPF" % (router.name)
@@ -644,135 +506,3 @@ class TPGMod(graph.Graph):
                     config_object.iface.router.name)
         else:
             raise "Unacceptable BGP-related config object"
-
-    def has_path(self, failset=[]):
-        vertex = self.get_vertex(self._s)
-        return self.dfs(vertex, [], failset)
-
-    def dfs(self, vertex, visited, failset):
-        if (vertex == self.get_vertex(self._t)):
-            return True, [vertex]
-
-        if (vertex in visited):
-            return False, []
-        visited.append(vertex)
-
-        for edge in self._graph.out_edges(vertex):
-            if (self.edge_has_failed(edge, failset)):
-                continue
-            found, subpath = self.dfs(edge[1], visited, failset)
-            if (found):
-                return found, [vertex] + subpath
-
-        return False, []
-
-    def edge_has_failed(self, edge, failset=[]):
-        src = str(edge[0]).split(':')[0]
-        dst = str(edge[1]).split(':')[0]
-        return ([src,dst] in failset or [dst,src] in failset)
-
-    def tpvp(self):
-        # Line 2
-        path = {}
-        sign = {}
-        bestpath = {}
-        bestsign = {}
-        for u in self._graph.nodes():
-            path[u] = {}
-            sign[u] = {}
-            bestpath[u] = None
-            bestsign[u] = None
-            for v in self._graph.out_neighbors(u):
-                path[u][v] = None
-                sign[u][v] = None
-
-        # Line 3
-        dst = self.get_vertex(self._t)
-        bestpath[dst] = [dst]
-        bestsign[dst] = {'lp':0,'len':0,'cost':0}
-
-        change = True
-        i = 0
-
-        # Line 4
-        while change:
-            i += 1
-
-#            print('ROUND %d' % i)
-#            for v in sorted(bestpath.keys()):
-#                print('\t%s %s' % (bestpath[v], bestsign[v]))
-
-            change = False
-
-            # Line 5
-            for u in self._graph.nodes():
-
-                if (u == dst): 
-                    continue
-
-                # Line 6
-                for e in self._graph.out_edges(u):
-                    v = e[1]
-
-                    if (bestpath[v] is not None and u not in bestpath[v]):
-
-                        # Line 7
-                        path[u][v] = [u] + bestpath[v]
-
-                        # Line 8
-                        L = {}
-                        if "label" in e.attr and e.attr["label"] != '':
-                            L = eval(e.attr["label"])
-                        sign[u][v] = self.sign_combine(L, bestsign[v])
-
-                # Line 9
-                newbestpath, newbestsign = self.path_rank(u, path[u], sign[u],
-                        bestpath[u], bestsign[u])
-
-                # Line 10
-                if newbestpath != bestpath[u] or newbestsign != bestsign[u]:
-
-#                    print("CHANGE: %s" % u)
-                    bestpath[u] = newbestpath
-                    bestsign[u] = newbestsign
-
-                    # Line 11
-                    change = True
-
-        src = self.get_vertex(self._s)
-#        print(bestsign)
-        return (bestpath[src], bestsign[src])
-
-    def sign_combine(self, label, sign):
-        newsign = sign.copy()
-        for k,v in label.items():
-            if k == 'cost' or k == 'len':
-                newsign[k] = v + (newsign[k] if k in newsign else 0)
-            elif k == 'lp':
-                newsign[k] = v
-
-        return newsign
-
-    def path_rank(self, u, paths, signs, bestpath, bestsign):
-        for v,sign in signs.items():
-            if (sign is None):
-                continue
-
-            if (bestsign is None):
-                bestsign = sign
-                bestpath = paths[v]
-
-            if ("OSPF" in str(u)):
-                if (sign['cost'] < bestsign['cost']):
-                    bestsign = sign
-                    bestpath = paths[v]
-            elif ("BGP" in str(u)):
-                if (sign['lp'] > bestsign['lp']
-                        or (sign['lp'] == bestsign['lp']
-                            and sign['len'] < bestsign['len'])):
-                    bestsign = sign
-                    bestpath = paths[v]
-
-        return bestpath, bestsign
-
-
