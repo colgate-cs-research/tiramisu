@@ -1,0 +1,84 @@
+{
+    "routers": [
+    {
+        "name": "a",
+        "ifaces": [
+            { "vlan": 12, "neighbor": "b" }
+        ],
+        "vlans": [
+            { "num": 12, "addr": "10.0.12.1/24" }
+        ],
+        "bgp": {
+            "external": [
+                { "addr" : "10.0.12.2", "import_policy": {"len": 1, "lp":100} }
+            ]
+        },
+        "subnets": ["Y"]
+    },
+    {
+        "name": "b",
+        "ifaces": [
+            { "vlan": 12, "neighbor": "a" },
+            { "vlan": 23, "neighbor": "c" }
+        ],
+        "vlans": [
+            { "num": 12, "addr": "10.0.12.2/24" },
+            { "num": 23, "addr": "10.0.23.2/24" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 23 }
+            ]
+        },
+        "bgp" : {
+            "external": [
+                { "addr" : "10.0.12.1", "import_policy": {"len": 1, "lp":100} }
+            ]
+        },
+        "subnets": ["X"]
+    },
+    {
+        "name": "c",
+        "ifaces": [
+            { "vlan": 23, "neighbor": "b" },
+            { "vlan": 34, "neighbor": "d" }
+        ],
+        "vlans": [
+            { "num": 23, "addr": "10.0.23.3/24" },
+            { "num": 34, "addr": "10.0.34.3/24" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 23 }
+            ]
+        },
+        "bgp" : {
+            "external": [
+                { "addr" : "10.0.34.4", "import_policy": {"len": 1, "lp":100} }
+            ]
+        }
+    },
+    {
+        "name": "d",
+        "ifaces": [
+            { "vlan": 34, "neighbor": "c" }
+        ],
+        "vlans": [
+            { "num": 34, "addr": "10.0.34.4/24" }
+        ],
+        "bgp": {
+            "external": [
+                { "addr" : "10.0.34.3", "import_policy": {"len": 1, "lp":100} }
+            ],
+            "origins": ["Z"]
+        },
+        "subnets": ["Z"]
+    }
+    ],
+    "paths": [
+        { "origin" : "Z", "endpoint" : "Y",
+          "failset" : [], "exists": false },
+        { "origin" : "Z", "endpoint" : "X",
+          "failset" : [], "exists": false }
+    ]
+}
