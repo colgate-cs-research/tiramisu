@@ -378,7 +378,7 @@ class TPGMod(graph.TPG):
                 self.add_subnet_to_ospf_edges(router)
                 self.add_vlan_to_ospf_edges(router)
             if (router.bgp is not None):
-                self.add_bgp_intraprocess_edges(router)
+#                self.add_bgp_intraprocess_edges(router)
                 self.add_bgp_to_vlan_ospf_edges(router)
                 self.add_subnet_to_bgp_edges(router)
                 self.add_vlan_to_bgp_edges(router)
@@ -401,8 +401,8 @@ class TPGMod(graph.TPG):
         vertex for each BGP neighbor
         """
         self.add_vertex(self.bgp_name(router), subgraph=self._bgp_sub)
-        for neighbor in router.bgp.neighbors:
-            self.add_vertex(self.bgp_name(neighbor), subgraph=self._bgp_sub)
+#        for neighbor in router.bgp.neighbors:
+#            self.add_vertex(self.bgp_name(neighbor), subgraph=self._bgp_sub)
 
     def add_bgp_intraprocess_edges(self, router):
         """
@@ -438,19 +438,19 @@ class TPGMod(graph.TPG):
                     matching_vlan = vlan
                     break
             if (matching_vlan):
-                self.add_edge(self.bgp_name(neighbor),
+                self.add_edge(self.bgp_name(router),
                         self.vlan_name(matching_vlan, "O"),
                         label=neighbor.import_policy)
                 if (neighbor.import_policy is not None):
-                    print("%s->%s %s" % (self.bgp_name(neighbor),
+                    print("%s->%s %s" % (self.bgp_name(router),
                             self.vlan_name(matching_vlan, "O"), 
                             neighbor.import_policy))
             elif (router.ospf is not None):
-                self.add_edge(self.bgp_name(neighbor),
+                self.add_edge(self.bgp_name(router),
                         self.ospf_name(router),
                         label=neighbor.import_policy)
                 if (neighbor.import_policy is not None):
-                    print("%s->%s %s" % (self.bgp_name(neighbor),
+                    print("%s->%s %s" % (self.bgp_name(router),
                             self.ospf_name(router), neighbor.import_policy))
 
     def add_subnet_to_ospf_edges(self, router):
