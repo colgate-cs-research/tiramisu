@@ -73,9 +73,10 @@ class Vlan:
         return "Vlan <num=%s, addr=%s>" % (self._num, self._addr)
 
 class Ospf:
-    def __init__(self, active_vlans=[], origins=[]):
+    def __init__(self, active_vlans=[], origins=[], redistribute=[]):
         self._active_vlans = active_vlans
         self._origins = origins
+        self._redistribute = redistribute
         self._router = None
 
     @classmethod
@@ -86,7 +87,10 @@ class Ospf:
         origins = []
         if "origins" in ospf_json:
             origins = ospf_json["origins"]
-        return Ospf(active_vlans, origins)
+        redistribute = []
+        if "redistribute" in ospf_json:
+            redistribute = ospf_json["redistribute"]
+        return Ospf(active_vlans, origins, redistribute)
 
     @property
     def active_vlans(self):
@@ -95,6 +99,10 @@ class Ospf:
     @property
     def origins(self):
         return self._origins
+
+    @property
+    def redistribute(self):
+        return self._redistribute
 
     @property
     def router(self):
@@ -106,6 +114,8 @@ class Ospf:
                 ','.join([str(v.num) for v in self._active_vlans])))
         if len(self._origins) > 0:
             result += ("\n\tOrigins: %s" % (','.join(self._origins)))
+        if len(self._redistribute) > 0:
+            result += ("\n\tOrigins: %s" % (','.join(self._redistribute)))
         return result
 
 class BgpNeighbor:
@@ -157,7 +167,7 @@ class BgpNeighbor:
                         ', export_policy=%s' % self._export_policy)))
 
 class Bgp:
-    def __init__(self, external=[], internal=[], origins=[]):
+    def __init__(self, external=[], internal=[], origins=[], redistribute=[]):
         self._external = external
         for neighbor in self._external:
             neighbor._bgp = self
@@ -165,6 +175,7 @@ class Bgp:
         for neighbor in self._internal:
             neighbor._bgp = self
         self._origins = origins
+        self._redistribute = redistribute
         self._router = None
 
     @classmethod
@@ -180,7 +191,10 @@ class Bgp:
         origins = []
         if "origins" in bgp_json:
             origins = bgp_json["origins"]
-        return Bgp(external, internal, origins)
+        redistribute = []
+        if "redistribute" in bgp_json:
+            redistribute = bgp_json["redistribute"]
+        return Bgp(external, internal, origins, redistribute)
 
     @property
     def external(self):
@@ -202,6 +216,10 @@ class Bgp:
         return self._origins
 
     @property
+    def redistribute(self):
+        return self._redistribute
+
+    @property
     def router(self):
         return self._router
 
@@ -215,6 +233,8 @@ class Bgp:
                 ',\n\t\t  '.join([str(n) for n in self._internal]))
         if len(self._origins) > 0:
             result += ("\n\tOrigins: %s" % (','.join(self._origins)))
+        if len(self._redistribute) > 0:
+            result += ("\n\tRedistribute: %s" % (','.join(self._redistribute)))
         return result
 
 class Router:

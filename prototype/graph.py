@@ -318,6 +318,10 @@ class Combined(Graph):
                                     "%s:OSPF" % adjacent.router.name, 
                                     color="forestgreen", combine=True)
 
+                if ("bgp" in router.ospf.redistribute):
+                    self.add_edge("%s:BGP" % router.name,
+                            "%s:OSPF" % router.name)
+
                 for subnet in router.ospf.origins:
                     self.add_edge(subnet, "%s:OSPF" % router.name, color="red")
 
@@ -337,6 +341,10 @@ class Combined(Graph):
                                 else "Ex:%s" % neighbor.export_policy),
                             headlabel=('' if import_policy is None
                                 else "Im:%s" % import_policy))
+
+                if ("ospf" in router.bgp.redistribute):
+                    self.add_edge("%s:OSPF" % router.name,
+                            "%s:BGP" % router.name)
 
                 for subnet in router.bgp.origins:
                     self.add_edge(subnet, "%s:BGP" % router.name, color="red")

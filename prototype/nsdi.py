@@ -23,10 +23,14 @@ class RAG(graph.Graph):
         for router in net.routers.values():
             if (router.ospf is not None):
                 self.add_ospf_adjacencies(router)
+                if ("bgp" in router.ospf.redistribute):
+                    self.add_edge(self.bgp_name(router), self.ospf_name(router))
                 if (subnet in router.ospf.origins):
                     self.add_edge(subnet, self.ospf_name(router), color="red")
             if (router.bgp is not None):
                 self.add_bgp_adjacencies(router)
+                if ("ospf" in router.bgp.redistribute):
+                    self.add_edge(self.ospf_name(router), self.bgp_name(router))
                 if (subnet in router.bgp.origins):
                     self.add_edge(subnet, self.bgp_name(router), color="red")
 
