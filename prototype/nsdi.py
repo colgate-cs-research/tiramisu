@@ -484,12 +484,13 @@ class TPGMod(graph.TPG):
             self.add_edge(self.vlan_name(vlan, "I"), self.bgp_name(router))
 
     def add_vlan_to_subnet_edges(self, router):
-        if ((router.ospf is not None
-                and self._rag.is_tainted(router.ospf)
-                and self._t in router.ospf.origins)
-            or (router.bgp is not None
-                and self._rag.is_tainted(router.bgp)
-                and self._t in router.bgp.origins)):
+        if (self._t in router.subnets and
+                ((router.ospf is not None
+                    and self._rag.is_tainted(router.ospf)
+                    and self._t in router.ospf.origins)
+                or (router.bgp is not None
+                    and self._rag.is_tainted(router.bgp)
+                    and self._t in router.bgp.origins))):
             for vlan in router.vlans.values():
                 self.add_edge(self.vlan_name(vlan, "I"), self._t)
 
