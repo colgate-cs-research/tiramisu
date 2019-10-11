@@ -21,6 +21,8 @@ def main():
             help='Check paths')
     arg_parser.add_argument('-verbose', dest='verbose', action='store_true',
             help='Verbose output')
+    arg_parser.add_argument('-contract', dest='contract', action='store_true',
+            help='Conduct edge-contraction on TPG')
     settings = arg_parser.parse_args()
     print("Settings: %s" % settings)
 
@@ -130,6 +132,13 @@ def main():
                 bestpath, bestsign = g.tpvp(settings.verbose, p.failset)
                 print('\t'+str(bestsign))
                 print('\t'+'\n\t'.join(bestpath))
+
+    if settings.contract and graphs is not None:
+        for tc, g in graphs.items():
+            print("TPG %s-%s" % tc)
+            g.contract()
+            g.render(os.path.join(settings.render_path, 
+                        ('tpg-contract_%s-%s.png') % tc))
 
 if __name__ == '__main__':
     main()

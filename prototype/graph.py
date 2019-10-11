@@ -499,3 +499,20 @@ class TPG(Graph):
                     bestpath = paths[v]
 
         return bestpath, bestsign
+
+    def contract(self):
+        for u in self._graph.nodes():
+            u_out = self._graph.out_edges(u)
+            if (len(u_out) == 1):
+                v = u_out[0][1]
+                if (self._graph.in_degree(v) == 1):
+                    v_out = self._graph.out_edges(v)
+                    print("\t%s - %s" % (u, v))
+                    uv = "%s-%s" % (u, v)
+                    self.add_vertex(uv)
+                    for e in self._graph.in_edges(u):
+                        self.add_edge(e[0], uv, label=e.attr["label"])
+                    for e in self._graph.out_edges(v):
+                        self.add_edge(uv, e[1], label=e.attr["label"])
+                    self._graph.remove_node(u)
+                    self._graph.remove_node(v)
