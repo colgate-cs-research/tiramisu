@@ -7,6 +7,34 @@ import nsdi
 import os
 import prensdi
 
+def simplify_path(path):
+    simple = [path[0]]
+    for vertex in path[1:]:
+        router = vertex.split(':')[0]
+        if simple[-1] != router:
+            simple += [router]
+    return simple 
+
+def check_paths(net, graphs, verbose=False):
+    for p in net.paths:
+        g = graphs[(p.origin, p.endpoint)]
+        found, hops = g.has_path(p.failset)
+        print("%s %s" % (p, found))
+        if (found != p.exists):
+            print("ERROR: path should%s exist but does%s exist" %
+                    (("" if p.exists else "n't"), ("" if found else "n't")))
+        if (found):
+            bestpath, bestsign = g.tpvp(verbose, p.failset)
+            if (bestpath is not None):
+                print('\t'+str(bestsign))
+                print('\t'+'\n\t'.join(bestpath))
+                if (simplify_path(bestpath) != p.expected):
+                    print("ERROR: path should be [%s] but is [%s]" %
+                            ('>'.join(p.expected), 
+                            '>'.join(simplify_path(bestpath))))
+            else:
+                print('\tNo path')
+
 def main():
     # Parse arguments
     arg_parser = ArgumentParser(description='Tiramisu prototype')
@@ -124,17 +152,7 @@ def main():
         graphs = tpgs
 
     if settings.paths and graphs is not None:
-        for p in net.paths:
-            g = graphs[(p.origin, p.endpoint)]
-            found, hops = g.has_path(p.failset)
-            print("%s %s" % (p, found))
-            if (found):
-                bestpath, bestsign = g.tpvp(settings.verbose, p.failset)
-                if (bestpath is not None):
-                    print('\t'+str(bestsign))
-                    print('\t'+'\n\t'.join(bestpath))
-                else:
-                    print('\tNo path')
+        check_paths(net, graphs, settings.verbose)
 
     if settings.contract and graphs is not None:
         for tc, g in graphs.items():

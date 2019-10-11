@@ -329,17 +329,19 @@ class Router:
         return result
 
 class Path:
-    def __init__(self, origin, endpoint, failset, exists):
+    def __init__(self, origin, endpoint, failset, exists, expected):
         self._origin = origin
         self._endpoint = endpoint
         self._failset = failset
         self._exists = exists
+        self._expected = expected
 
     @classmethod
     def create(cls, path_json):
         return Path(path_json["origin"], path_json["endpoint"],
                 (path_json["failset"] if "failset" in path_json else []),
-                path_json["exists"])
+                path_json["exists"],
+                (path_json["expected"] if "expected" in path_json else []))
 
     @property
     def origin(self):
@@ -357,9 +359,14 @@ class Path:
     def exists(self):
         return self._exists
 
+    @property
+    def expected(self):
+        return self._expected
+
     def __str__(self):
-        return ("Path <origin=%s, endpoint=%s, failset=%s, exists=%s>" % 
-                (self._origin, self._endpoint, self._failset, self._exists))
+        return ("Path <origin=%s, endpoint=%s, failset=%s, exists=%s, expected=[%s]>" % 
+                (self._origin, self._endpoint, self._failset, self._exists, 
+                ','.join(self._expected)))
 
 class Network:
     def __init__(self, routers, paths):
