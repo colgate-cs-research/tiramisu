@@ -7,7 +7,7 @@ from tabulate import tabulate
 class Graph:
     def __init__(self, net):
         self._graph = pygraphviz.AGraph(strict=False, directed=True, 
-                ranksep=2.0)
+                ranksep=1.5)
         self._net = net
 
     def render(self, file_path):
@@ -45,8 +45,8 @@ class Graph:
         return (self._graph.has_edge(src, dst) or
                 (either and self.graph.has_edge(dst, src)))
 
-    def add_subgraph(self, name=None, color=None):
-        subgraph = self._graph.add_subgraph(name=name, rank='same')
+    def add_subgraph(self, name=None, color=None, rank='same'):
+        subgraph = self._graph.add_subgraph(name=name, rank=rank)
         if color is not None:
             subgraph.node_attr['color'] = color
             subgraph.node_attr['fontcolor'] = color
@@ -261,7 +261,7 @@ class Bgp(Graph):
     def __init__(self, net):
         super().__init__(net)
 
-        self._bgp_sub = self.add_subgraph("bgp", color="orange")
+        self._bgp_sub = self.add_subgraph("bgp", color="orange", rank="")
         self._subnet_sub = self.add_subgraph("subnet", color="red")
 
         for router in net.routers.values():
@@ -276,12 +276,20 @@ class Bgp(Graph):
             if router.bgp is None:
                 continue
 
-            for neighbor in router.bgp.external:
-                self.add_edge(router.name, neighbor.iface.router.name, 
-                        color="orange", combine=True)
-            for neighbor in router.bgp.internal:
-                self.add_edge(router.name, neighbor.iface.router.name, 
-                        color="orange", combine=True, style="dashed")
+            for neighbor in router.bgp.neighbors:
+                import_policy = None
+                for reverse in neighbor.iface.router.bgp.neighbors:
+                    if reverse.iface.router == router:
+                        import_policy = reverse.import_policy
+
+                self.add_edge("%s" % router.name,
+                        "%s" % neighbor.iface.router.name, color="orange",
+                        style=("dashed" if neighbor in router.bgp.internal
+                            else "solid"),
+                        taillabel=('' if neighbor.export_policy is None
+                            else "Ex:%s" % neighbor.export_policy),
+                        headlabel=('' if import_policy is None
+                            else "Im:%s" % import_policy))
 
             for subnet in router.bgp.origins:
                 self.add_edge(subnet, router.name, color="red")
