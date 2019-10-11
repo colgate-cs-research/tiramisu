@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import copy
 import pygraphviz
 from tabulate import tabulate
 
@@ -399,7 +400,7 @@ class TPG(Graph):
         # Line 3
         dst = self.get_vertex(self._t)
         bestpath[dst] = [dst]
-        bestsign[dst] = {'lp':0,'len':0,'cost':0}
+        bestsign[dst] = {'lp':0,'len':0,'cost':0,'tags':set()}
 
         change = True
         i = 0
@@ -425,7 +426,8 @@ class TPG(Graph):
                     continue
 
                 # Line 6
-                for e in self._graph.out_edges(u):
+                for e in self._graph.out_edges(u)[::-1]:
+#                    print("%s %s" % (e, e.attr["label"]))
                     if self.edge_has_failed(e, failset):
                         continue
 
@@ -441,6 +443,9 @@ class TPG(Graph):
                         if "label" in e.attr and e.attr["label"] != '':
                             L = eval(e.attr["label"])
                         sign[u][v] = self.sign_combine(L, bestsign[v])
+
+                        if (sign[u][v] == None):
+                            path[u][v] = None
 
                 # Line 9
                 newbestpath, newbestsign = self.path_rank(u, path[u], sign[u],
@@ -469,12 +474,19 @@ class TPG(Graph):
         return (bestpath[src], bestsign[src])
 
     def sign_combine(self, label, sign):
-        newsign = sign.copy()
+        newsign = copy.deepcopy(sign)
         for k,v in label.items():
             if k == 'cost' or k == 'len':
                 newsign[k] = v + (newsign[k] if k in newsign else 0)
             elif k == 'lp':
                 newsign[k] = v
+            elif k == 'at':
+                newsign['tags'].update(v)
+            elif k == 'rt':
+                newsign['tags'].difference_update(v)
+            elif k == 'bt':
+                if (len(newsign['tags'].intersection(v)) > 0):
+                    return None
 
         return newsign
 

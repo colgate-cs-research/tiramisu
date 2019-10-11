@@ -130,8 +130,11 @@ def main():
             print("%s %s" % (p, found))
             if (found):
                 bestpath, bestsign = g.tpvp(settings.verbose, p.failset)
-                print('\t'+str(bestsign))
-                print('\t'+'\n\t'.join(bestpath))
+                if (bestpath is not None):
+                    print('\t'+str(bestsign))
+                    print('\t'+'\n\t'.join(bestpath))
+                else:
+                    print('\tNo path')
 
     if settings.contract and graphs is not None:
         for tc, g in graphs.items():
