@@ -52,7 +52,8 @@
         "bgp" : {
             "external" : [
                 { "addr": "10.0.3.4", "import_policy": {"len": 1, "lp": 100} },
-                { "addr": "10.0.5.2", "import_policy": {"len": 1, "lp": 100} }
+                { "addr": "10.0.5.2", 
+                    "import_policy": {"len": 1, "lp": 100, "at":["c1"]} }
             ]
         }
     },
@@ -72,14 +73,19 @@
             "external": [
                 { "addr": "10.0.1.1", "import_policy": {"len": 1, "lp": 150} },
                 { "addr": "10.0.2.2", "import_policy": {"len": 1, "lp": 180} },
-                { "addr": "10.0.3.3", "import_policy": {"len": 1, "lp": 100} }
+                { "addr": "10.0.3.3", 
+                    "import_policy": {"len": 1, "lp": 100, "bt":["c1"]} }
             ]
         },
         "subnets": ["Y"]
     }
     ],
     "paths": [
-        { "origin" : "Z", "endpoint" : "Y",
-          "failset" : [], "exists": true }
+        { "origin": "Z", "endpoint": "Y",
+          "failset": [], "exists": true,
+          "expected": ["Y","d","b","a","Z"] },
+        { "origin": "Z", "endpoint": "Y",
+          "failset": [["a","d"],["b","d"]], "exists": false }
+
     ]
 }

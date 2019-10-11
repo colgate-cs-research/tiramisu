@@ -76,9 +76,9 @@
     }
     ],
     "paths": [
-        { "origin" : "Z", "endpoint" : "Y",
-          "failset" : [], "exists": false },
-        { "origin" : "Z", "endpoint" : "X",
-          "failset" : [], "exists": false }
+        { "origin": "Z", "endpoint": "Y",
+          "failset": [], "exists": false },
+        { "origin": "Z", "endpoint": "X",
+          "failset": [], "exists": false }
     ]
 }

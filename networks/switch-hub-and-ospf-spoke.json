@@ -59,9 +59,11 @@
     }
     ],
     "paths": [
-        { "origin" : "Z", "endpoint" : "Y",
-          "failset" : [], "exists": true },
-        { "origin" : "Z", "endpoint" : "X",
-          "failset" : [], "exists": true }
+        { "origin": "Z", "endpoint": "Y",
+          "failset": [], "exists": true, 
+          "expected": ["Y","c","h","a","Z"] },
+        { "origin": "Z", "endpoint": "X",
+          "failset": [], "exists": true,
+          "expected": ["X","b","h","a","Z"] }
     ]
 }

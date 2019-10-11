@@ -56,14 +56,16 @@
     }
     ],
     "paths": [
-        { "origin" : "Z", "endpoint" : "Y",
-          "failset" : [], "exists": true },
-        { "origin" : "Z", "endpoint" : "Y",
-          "failset" : [["a","c"]], "exists" : false },
-        { "origin" : "Z", "endpoint" : "X",
-          "failset" : [], "exists": true },
-        { "origin" : "Z", "endpoint" : "X",
-          "failset" : [["a","c"]], "exists" : false }
+        { "origin": "Z", "endpoint": "Y",
+          "failset": [], "exists": true,
+          "expected": ["Y","c","a","Z"] },
+        { "origin": "Z", "endpoint": "Y",
+          "failset": [["a","c"]], "exists" : false },
+        { "origin": "Z", "endpoint": "X",
+          "failset": [], "exists": true,
+          "expected": ["X","b","c","a","Z"] },
+        { "origin": "Z", "endpoint": "X",
+          "failset": [["a","c"]], "exists" : false }
 
     ]
 }
