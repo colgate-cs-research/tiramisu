@@ -19,10 +19,7 @@ def check_paths(net, graphs, verbose=False):
     for p in net.paths:
         g = graphs[(p.origin, p.endpoint)]
         found, hops = g.has_path(p.failset)
-        print("%s %s" % (p, found))
-        if (found != p.exists):
-            print("ERROR: path should%s exist but does%s exist" %
-                    (("" if p.exists else "n't"), ("" if found else "n't")))
+        print("%s" % (p))
         if (found):
             bestpath, bestsign = g.tpvp(verbose, p.failset)
             if (bestpath is not None):
@@ -34,6 +31,11 @@ def check_paths(net, graphs, verbose=False):
                             '>'.join(simplify_path(bestpath))))
             else:
                 print('\tNo path')
+        else:
+            print('\tNo path')
+            if (found != p.exists):
+                print("ERROR: path should%s exist but does%s exist" %
+                        (("" if p.exists else "n't"), ("" if found else "n't")))
 
 def main():
     # Parse arguments
