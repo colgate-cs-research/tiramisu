@@ -85,7 +85,7 @@ def main():
         rags = {} 
         for t in subnets:
             rag = nsdi.RAG(net, l2, t)
-            rag.taint()
+            rag.taint(settings.verbose)
             rag.render(os.path.join(settings.render_path, ('rag_%s.png' % t)))
             rags[t] = rag
 

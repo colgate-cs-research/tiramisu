@@ -34,23 +34,29 @@ class RAG(graph.Graph):
                 if (subnet in router.bgp.origins):
                     self.add_edge(subnet, self.bgp_name(router), color="red")
 
-    def taint(self):
+    def taint(self, verbose=False):
         if (self._subnet is not None):
+            if (verbose):
+                print("Tainting %s..." % self._subnet)
             vertex = self.get_vertex(self._subnet)
             vertex.attr["color"] = "black"
-            self.propagate_taint(vertex)
+            self.propagate_taint(vertex, verbose=verbose)
 
-    def propagate_taint(self, vertex, noibgp=False):
+    def propagate_taint(self, vertex, noibgp=False, verbose=False):
         if vertex.attr["color"] == "red":
             return
 
         vertex.attr["color"] = "red"
+        if (verbose):
+            print("\tTaint %s" % vertex)
 
         for edge in self._graph.out_edges(vertex):
             ibgp = (edge.attr["style"] == "dashed")
             if (not (ibgp and noibgp)):
                 edge.attr["color"] = "red"
-                self.propagate_taint(edge[1], ibgp)
+                if (verbose):
+                    print("\tPropagate from %s to %s" % edge)
+                self.propagate_taint(edge[1], noibgp=ibgp, verbose=verbose)
 
     def is_tainted(self, process):
         if (type(process) is config.Ospf):
