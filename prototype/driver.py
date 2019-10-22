@@ -31,11 +31,12 @@ def check_paths(net, graphs, verbose=False):
                             '>'.join(simplify_path(bestpath))))
             else:
                 print('\tNo path')
+                if (p.exists):
+                    print("ERROR: path should exist but doesn't exist")
         else:
             print('\tNo path')
-            if (found != p.exists):
-                print("ERROR: path should%s exist but does%s exist" %
-                        (("" if p.exists else "n't"), ("" if found else "n't")))
+            if (p.exists):
+                print("ERROR: path should exist but doesn't exist")
 
 def main():
     # Parse arguments
