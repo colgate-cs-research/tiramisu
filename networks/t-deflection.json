@@ -117,6 +117,8 @@
           "expected": ["X","b","f","Z"] },
         { "origin": "Z", "endpoint": "Y",
           "failset": [["b","f"]], "exists": false },
+        { "origin": "Z", "endpoint": "Y",
+          "failset": [["c","e"]], "exists": false },
         { "origin": "Z", "endpoint": "X",
           "failset": [["b","f"]], "exists": false}
     ]
