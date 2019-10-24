@@ -450,7 +450,8 @@ class TPG(Graph):
                         L = {}
                         if "label" in e.attr and e.attr["label"] != '':
                             L = eval(e.attr["label"])
-                        sign[u][v] = self.sign_combine(L, bestsign[v])
+                        sign[u][v] = self.sign_combine(L, bestsign[v], 
+                                bestpath[v])
 
                         if (sign[u][v] == None):
                             path[u][v] = None
@@ -481,7 +482,7 @@ class TPG(Graph):
 #        print(bestsign)
         return (bestpath[src], bestsign[src])
 
-    def sign_combine(self, label, sign):
+    def sign_combine(self, label, sign, path):
         newsign = copy.deepcopy(sign)
         for k,v in label.items():
             if k == 'cost' or k == 'len':
@@ -494,6 +495,10 @@ class TPG(Graph):
                 newsign['tags'].difference_update(v)
             elif k == 'bt':
                 if (len(newsign['tags'].intersection(v)) > 0):
+                    return None
+            elif k == 'inpath':
+                if v not in path:
+#                    print("%s not in %s" % (v, path))
                     return None
 
         return newsign
