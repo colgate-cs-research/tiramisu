@@ -6,37 +6,41 @@ import graph
 import nsdi
 import os
 import prensdi
+import redesign
 
 def simplify_path(path):
     simple = [path[0]]
     for vertex in path[1:]:
-        router = vertex.split(':')[0]
+        router = vertex
+        if (router[0] == '['):
+            router = router.split(']')[1]
+        router = router.split(':')[0]
         if simple[-1] != router:
             simple += [router]
     return simple 
 
-def check_paths(net, graphs, verbose=False):
+def check_paths(net, graphs, verbose=False, reprocess=False):
     for p in net.paths:
         g = graphs[(p.origin, p.endpoint)]
-        found, hops = g.has_path(p.failset)
+#        found, hops = g.has_path(p.failset)
         print("%s" % (p))
-        if (found):
-            bestpath, bestsign = g.tpvp(verbose, p.failset)
-            if (bestpath is not None):
-                print('\t'+str(bestsign))
-                print('\t'+'\n\t'.join(bestpath))
-                if (simplify_path(bestpath) != p.expected):
-                    print("ERROR: path should be [%s] but is [%s]" %
-                            ('>'.join(p.expected), 
-                            '>'.join(simplify_path(bestpath))))
-            else:
-                print('\tNo path')
-                if (p.exists):
-                    print("ERROR: path should exist but doesn't exist")
+#        if (found):
+        bestpath, bestsign = g.tpvp(verbose, p.failset, reprocess)
+        if (bestpath is not None):
+            print('\t'+str(bestsign))
+            print('\t'+'\n\t'.join(bestpath))
+            if (simplify_path(bestpath) != p.expected):
+                print("ERROR: path should be [%s] but is [%s]" %
+                        ('>'.join(p.expected), 
+                        '>'.join(simplify_path(bestpath))))
         else:
             print('\tNo path')
             if (p.exists):
                 print("ERROR: path should exist but doesn't exist")
+#        else:
+#            print('\tNo path')
+#            if (p.exists):
+#                print("ERROR: path should exist but doesn't exist")
 
 def main():
     # Parse arguments
@@ -47,7 +51,8 @@ def main():
             required=True, help='Path to render graphs')
     arg_parser.add_argument('-rules', dest='rules', action='store',
             help='Rules to follow',
-            choices=["nsdi", "prensdi", "nsditpg", "prensdimod", "nsdimod"])
+            choices=["nsdi", "prensdi", "nsditpg", "prensdimod", "nsdimod", 
+                "redesign"])
     arg_parser.add_argument('-paths', dest='paths', action='store_true',
             help='Check paths')
     arg_parser.add_argument('-verbose', dest='verbose', action='store_true',
@@ -154,8 +159,33 @@ def main():
 
         graphs = tpgs
 
+    # Create redesign-style graphs
+    elif (settings.rules.startswith("redesign")):
+        # Create RAGs
+        rags = {} 
+        for t in subnets:
+            rag = redesign.RAG(net, l2, t)
+            rag.taint(settings.verbose)
+            rag.render(os.path.join(settings.render_path, ('rag_%s.png' % t)))
+            rags[t] = rag
+
+        # Create TPGs
+        tpgs = {}
+        for t in subnets:
+            for s in subnets:
+                if (s == t):
+                    continue
+                pair = (t, s)
+                tpg = redesign.TPG(net, pair, rags[t])
+                tpg.render(os.path.join(settings.render_path, 
+                    ('tpg_%s-%s.png') % pair))
+                tpgs[pair] = tpg
+
+        graphs = tpgs
+
     if settings.paths and graphs is not None:
-        check_paths(net, graphs, settings.verbose)
+        check_paths(net, graphs, settings.verbose,
+                settings.rules.startswith('redesign'))
 
     if settings.contract and graphs is not None:
         for tc, g in graphs.items():

@@ -14,15 +14,18 @@ class Graph:
         self._graph.layout(prog='dot')
         self._graph.draw(file_path, prog='dot')
 
-    def add_vertex(self, name, color='black', subgraph=None):
+    def add_vertex(self, name, color='black', shape='ellipse', subgraph=None):
         if (subgraph is not None):
             subgraph.add_node(name, 
                     color=(subgraph.node_attr['color'] 
                         if color=="black" else color), 
                     fontcolor=(subgraph.node_attr['fontcolor']
-                        if color=="black" else color))
+                        if color=="black" else color),
+                    shape=(subgraph.node_attr['shape']
+                        if shape=="ellipse" else shape))
         else:
-            self._graph.add_node(name, color=color, fontcolor=color)
+            self._graph.add_node(name, color=color, fontcolor=color, 
+                    shape=shape)
         return self.get_vertex(name)
 
     def get_vertex(self, name):
@@ -45,11 +48,14 @@ class Graph:
         return (self._graph.has_edge(src, dst) or
                 (either and self.graph.has_edge(dst, src)))
 
-    def add_subgraph(self, name=None, color=None, rank='same'):
-        subgraph = self._graph.add_subgraph(name=name, rank=rank)
-        if color is not None:
-            subgraph.node_attr['color'] = color
-            subgraph.node_attr['fontcolor'] = color
+    def add_subgraph(self, name=None, color="black", shape="ellipse", 
+            rank='same', supergraph=None):
+        if (supergraph is None):
+            supergraph = self._graph
+        subgraph = supergraph.add_subgraph(name=name, rank=rank)
+        subgraph.node_attr['color'] = color
+        subgraph.node_attr['fontcolor'] = color
+        subgraph.node_attr['shape'] = shape
         return subgraph
 
 class Physical(Graph):
@@ -390,7 +396,7 @@ class TPG(Graph):
         dst = str(edge[1]).split(':')[0]
         return ([src,dst] in failset or [dst,src] in failset)
 
-    def tpvp(self, verbose=False, failset=[]):
+    def tpvp(self, verbose=False, failset=[], reprocess=False):
         # Line 2
         path = {}
         sign = {}
@@ -479,7 +485,32 @@ class TPG(Graph):
 
         src = self.get_vertex(self._s)
 #        print(bestsign)
-        return (bestpath[src], bestsign[src])
+
+        if (reprocess):
+            realpath = []
+            node = src
+            while (node != dst):
+                node_path = bestpath[node]
+                if (node_path is None):
+                    return (None, None)
+                head_path, node = self.get_head_and_next(node_path)
+                realpath += head_path
+            return (realpath + [dst], {})
+        else:
+            return (bestpath[src], bestsign[src])
+
+    def get_head_and_next(self, path):
+        node = path[0]
+        head_path = []
+        for vertex in path:
+            vertex_node = vertex
+            if (vertex_node.startswith('[')):
+                vertex_node = vertex_node.split(']')[1]
+            vertex_node = vertex_node.split(':')[0]
+            if vertex_node != node:
+                return head_path, vertex_node
+            head_path += [vertex]
+        return (head_path, None)
 
     def sign_combine(self, label, sign):
         newsign = copy.deepcopy(sign)
