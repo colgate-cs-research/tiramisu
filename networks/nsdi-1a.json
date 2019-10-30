@@ -33,7 +33,8 @@
         "ospf" : {
             "active": [
                 { "vlan" : 1 },
-                { "vlan" : 3 }
+                { "vlan" : 3 },
+                { "vlan" : 10 }
             ]
         },
         "bgp": {
@@ -70,7 +71,8 @@
         "ospf" : {
             "active": [
                 { "vlan" : 2 },
-                { "vlan" : 3 }
+                { "vlan" : 3 },
+                { "vlan" : 11 }
             ]
         },
         "bgp" : {
@@ -96,7 +98,9 @@
         "ospf" : {
             "active": [
                 { "vlan" : 1 },
-                { "vlan" : 2 }
+                { "vlan" : 2 },
+                { "vlan" : 12 }
+            ]
             ]
         },
         "bgp" : {
