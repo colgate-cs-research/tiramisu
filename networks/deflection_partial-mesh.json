@@ -1,0 +1,119 @@
+{
+    "routers": [
+    {
+        "name": "a",
+        "ifaces": [
+            { "vlan": 12, "neighbor": "b" },
+            { "vlan": 101, "neighbor": "a" }
+        ],
+        "vlans": [
+            { "num": 12, "addr": "10.0.12.1/24" },
+            { "num": 101, "addr": "10.0.101.1/24" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 12 },
+                { "vlan" : 101 }
+            ]
+        },
+        "bgp" : {
+            "internal" : [
+                { "addr" : "10.0.103.3" }
+            ]
+        },
+        "subnets" : ["Y"]
+    },
+    {
+        "name": "b",
+        "ifaces": [
+            { "vlan": 12, "neighbor": "a" },
+            { "vlan": 23, "neighbor": "c" },
+            { "vlan": 25, "neighbor": "e" },
+            { "vlan": 102, "neighbor": "b" }
+        ],
+        "vlans": [
+            { "num": 12, "addr": "10.0.12.2/24" },
+            { "num": 23, "addr": "10.0.23.2/24" },
+            { "num": 25, "addr": "10.0.25.2/24" },
+            { "num": 102, "addr": "10.0.102.2/24" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 12 },
+                { "vlan" : 23 },
+                { "vlan" : 102 }
+            ]
+        },
+        "bgp" : {
+            "internal" : [
+                { "addr" : "10.0.103.3" }
+            ],
+            "external": [
+                { "addr" : "10.0.25.5", "import_policy": {"len":1, "lp": 100} }
+            ]
+        },
+        "subnets" : ["X"]
+    },
+    {
+        "name": "c",
+        "ifaces": [
+            { "vlan": 23, "neighbor": "b" },
+            { "vlan": 35, "neighbor": "e" },
+            { "vlan": 103, "neighbor": "c" }
+        ],
+        "vlans": [
+            { "num": 23, "addr": "10.0.23.3/24" },
+            { "num": 35, "addr": "10.0.35.3/24" },
+            { "num": 103, "addr": "10.0.103.3/24" }
+        ],
+        "ospf" : {
+            "active": [
+                { "vlan" : 23 },
+                { "vlan" : 103 }
+            ]
+        },
+        "bgp": {
+            "external": [
+                { "addr" : "10.0.35.5", "import_policy": {"len":1, "lp": 100} }
+            ],
+            "internal": [
+                { "addr" : "10.0.101.1" },
+                { "addr" : "10.0.102.2" }
+            ]
+        }
+    },
+    {
+        "name": "e",
+        "ifaces": [
+            { "vlan": 25, "neighbor": "b" },
+            { "vlan": 35, "neighbor": "c" }
+        ],
+        "vlans": [
+            { "num": 25, "addr": "10.0.25.5/24" },
+            { "num": 35, "addr": "10.0.35.5/24" }
+        ],
+        "bgp" : {
+            "external": [
+                { "addr" : "10.0.25.2", "import_policy": {"len":1, "lp": 100} },
+                { "addr" : "10.0.35.3", "import_policy": {"len":1, "lp": 100} }
+            ],
+            "origins": ["Z"]
+        },
+        "subnets" : ["Z"]
+    }
+    ],
+    "paths": [
+        { "origin": "Z", "endpoint": "Y",
+          "failset": [], "exists":true, "expected": ["Y","a","b","e","Z"] },
+        { "origin": "Z", "endpoint": "X",
+          "failset": [], "exists":true, "expected": ["X","b","e","Z"] },
+        { "origin": "Z", "endpoint": "Y",
+          "failset": [["b","e"]], "exists":true,
+          "expected": ["Y","a","b","c","e","Z"] },
+        { "origin": "Z", "endpoint": "X",
+          "failset": [["b","e"]], "exists":true,
+          "expected": ["X","b","c","e","Z"] },
+        { "origin": "Z", "endpoint": "Y", 
+            "failset": [["c","e"]], "exists":false }
+    ]
+}
