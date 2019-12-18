@@ -22,8 +22,10 @@ def simplify_path(path):
 def check_paths(net, graphs, verbose=False, reprocess=False):
     for p in net.paths:
         g = graphs[(p.origin, p.endpoint)]
-#        found, hops = g.has_path(p.failset)
         print("%s" % (p))
+        found, hops = g.has_path(p.failset)
+        if (found):
+            print("\tDFS path exists")
 #        if (found):
         bestpath, bestsign = g.tpvp(verbose, p.failset, reprocess)
         if (bestpath is not None):
@@ -50,7 +52,7 @@ def main():
     arg_parser.add_argument('-render', dest='render_path', action='store',
             required=True, help='Path to render graphs')
     arg_parser.add_argument('-rules', dest='rules', action='store',
-            help='Rules to follow',
+            help='Rules to follow', required=True,
             choices=["nsdi", "prensdi", "nsditpg", "prensdimod", "nsdimod", 
                 "redesign"])
     arg_parser.add_argument('-paths', dest='paths', action='store_true',
