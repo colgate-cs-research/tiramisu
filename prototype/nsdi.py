@@ -233,6 +233,9 @@ class RPG(graph.Graph):
         dst = str(edge[1]).split(':')[0]
         return ([src,dst] in failset or [dst,src] in failset)
 
+    def tpvp(self, verbose=False, failset=[], reprocess=False):
+        return (None,None)
+
 class TPG(graph.TPG):
     def __init__(self, net, subnets, rag):
         super().__init__(net, subnets)
