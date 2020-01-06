@@ -279,6 +279,7 @@ class TPG(graph.TPG):
     def add_bgp_vertices(self, router):
         for neighbor in router.bgp.neighbors:
             self.add_vertex(self.bgp_name(neighbor), subgraph=self._bgp_sub)
+            break
 
     def add_vlan_to_vlan_edges(self, router):
         for vlan in router.vlans.values():
@@ -302,16 +303,16 @@ class TPG(graph.TPG):
                 self.add_edge(self.bgp_name(neighbor), 
                         self.vlan_name(matching_vlan), 
                         label=neighbor.import_policy)
-                if (neighbor.import_policy is not None):
-                    print("%s->%s %s" % (self.bgp_name(neighbor), 
-                        self.vlan_name(matching_vlan), neighbor.import_policy))
+#                if (neighbor.import_policy is not None):
+#                    print("%s->%s %s" % (self.bgp_name(neighbor), 
+#                        self.vlan_name(matching_vlan), neighbor.import_policy))
             elif (router.ospf is not None):
                 self.add_edge(self.bgp_name(neighbor), 
                         self.ospf_name(router),
                         label=neighbor.import_policy)
-                if (neighbor.import_policy is not None):
-                    print("%s->%s %s" % (self.bgp_name(neighbor), 
-                        self.ospf_name(router), neighbor.import_policy))
+#                if (neighbor.import_policy is not None):
+#                    print("%s->%s %s" % (self.bgp_name(neighbor), 
+#                        self.ospf_name(router), neighbor.import_policy))
 
     def add_subnet_to_ospf_edges(self, router):
         if (self._rag.is_tainted(router.ospf)
@@ -323,6 +324,7 @@ class TPG(graph.TPG):
                 and self._s in router.subnets):
             for neighbor in router.bgp.neighbors:
                 self.add_edge(self._s, self.bgp_name(neighbor))
+                break
 
     def add_vlan_to_ospf_edges(self, router):
         if (not self._rag.is_tainted(router.ospf)):
@@ -336,6 +338,7 @@ class TPG(graph.TPG):
         for vlan in router.vlans.values():
             for neighbor in router.bgp.neighbors:
                 self.add_edge(self.vlan_name(vlan), self.bgp_name(neighbor))
+                break
 
     def add_vlan_to_subnet_edges(self, router):
         if ((router.ospf is not None 
@@ -357,8 +360,9 @@ class TPG(graph.TPG):
         return "%s:OSPF" % (router.name)
 
     def bgp_name(self, neighbor):
-        return "%s:BGP:%s" % (neighbor.bgp.router.name, 
-                neighbor.iface.router.name)
+        return "%s:BGP" % (neighbor.bgp.router.name)
+#        return "%s:BGP:%s" % (neighbor.bgp.router.name, 
+#                neighbor.iface.router.name)
 
 class TPGMod(graph.TPG):
     def __init__(self, net, subnets, rag):

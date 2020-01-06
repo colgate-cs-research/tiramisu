@@ -414,7 +414,7 @@ class TPG(Graph):
         # Line 3
         dst = self.get_vertex(self._t)
         bestpath[dst] = [dst]
-        bestsign[dst] = {'lp':0,'len':0,'cost':0,'tags':set()}
+        bestsign[dst] = {'lp':100,'len':0,'cost':0,'tags':set()}
 
         change = True
         i = 0

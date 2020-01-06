@@ -65,7 +65,7 @@ def main():
     print("Settings: %s" % settings)
 
     net = config.Network.load(settings.json_path)
-    print(net)
+#    print(net)
 
     # Generate physical and layer 2
     phy = graph.Physical(net)
