@@ -247,6 +247,7 @@ class TPG(graph.TPG):
         self._ospf_sub = self.add_subgraph("ospf", color="forestgreen")
         self._vlan_sub = self.add_subgraph("vlan", color="blue")
 
+        # Create vertices for VLANs and routing processes
         for router in net.routers.values():
             self.add_vlan_vertices(router)
             if (router.ospf is not None):
@@ -254,9 +255,11 @@ class TPG(graph.TPG):
             if (router.bgp is not None):
                 self.add_bgp_vertices(router)
 
+        # Create special source and target vertices
         self.add_vertex(self._t, subgraph=self._subnet_sub)
         self.add_vertex(self._s, subgraph=self._subnet_sub)
 
+        # Create edges
         for router in net.routers.values():
             self.add_vlan_to_vlan_edges(router)
             self.add_vlan_to_subnet_edges(router)
@@ -270,31 +273,41 @@ class TPG(graph.TPG):
                 self.add_vlan_to_bgp_edges(router)
 
     def add_vlan_vertices(self, router):
+        # Create a VLAN vertex per VLAN per router 
         for vlan in router.vlans.values():
             self.add_vertex(self.vlan_name(vlan), subgraph=self._vlan_sub)
 
     def add_ospf_vertices(self, router):
+        # Create an OSPF vertex per OSPF process
         self.add_vertex(self.ospf_name(router), subgraph=self._ospf_sub)
 
     def add_bgp_vertices(self, router):
+        # Create a BGP vertex per BGP process
         for neighbor in router.bgp.neighbors:
             self.add_vertex(self.bgp_name(neighbor), subgraph=self._bgp_sub)
             break
 
     def add_vlan_to_vlan_edges(self, router):
         for vlan in router.vlans.values():
+            # Connect VLAN vertex to vertex(es) for same VLAN on physically 
+            # connected routers
             for iface in vlan.ifaces:
                 self.add_edge(self.vlan_name(vlan), 
                         self.vlan_name(iface.neighbor.vlan))
 
     def add_ospf_to_vlan_edges(self, router):
+        # Connect OSPF vertex to vertex for each VLAN on which OSPF process
+        # operates
         for vlan in router.ospf.active_vlans:
             self.add_edge(self.ospf_name(router), self.vlan_name(vlan),
                     label={"cost":1})
 
     def add_bgp_to_vlan_ospf_edges(self, router):
+        # Create edge for each of a BGP process's neighbors
         for neighbor in router.bgp.neighbors:
             matching_vlan = None
+            # If neighbor can be reached using a connected route (i.e., VLAN),
+            # then connect BGP vertex to corresponding VLAN vertex
             for vlan in router.vlans.values():
                 if neighbor.addr in vlan.addr.network:
                     matching_vlan = vlan
@@ -306,6 +319,7 @@ class TPG(graph.TPG):
 #                if (neighbor.import_policy is not None):
 #                    print("%s->%s %s" % (self.bgp_name(neighbor), 
 #                        self.vlan_name(matching_vlan), neighbor.import_policy))
+            # Otherwise, connect BGP vertex to OSPF vertex
             elif (router.ospf is not None):
                 self.add_edge(self.bgp_name(neighbor), 
                         self.ospf_name(router),
@@ -315,11 +329,15 @@ class TPG(graph.TPG):
 #                        self.ospf_name(router), neighbor.import_policy))
 
     def add_subnet_to_ospf_edges(self, router):
+        # Connect source vertex to OSPF vertex on the same router, if OSPF 
+        # process is tainted in the RAG
         if (self._rag.is_tainted(router.ospf)
                 and self._s in router.subnets):
             self.add_edge(self._s, self.ospf_name(router))
 
     def add_subnet_to_bgp_edges(self, router):
+        # Connect source vertex to BGP vertex on the same router, if BGP
+        # process is tainted in the RAG
         if (self._rag.is_tainted(router.bgp)
                 and self._s in router.subnets):
             for neighbor in router.bgp.neighbors:
@@ -327,12 +345,16 @@ class TPG(graph.TPG):
                 break
 
     def add_vlan_to_ospf_edges(self, router):
+        # Connect VLAN vertices to OSPF vertex on the same router, if OSPF
+        # process is tainted in the RAG
         if (not self._rag.is_tainted(router.ospf)):
             return
         for vlan in router.vlans.values():
             self.add_edge(self.vlan_name(vlan), self.ospf_name(router))
 
     def add_vlan_to_bgp_edges(self, router):
+        # Connect VLAN vertices to BGP vertex on the same router, if BGP
+        # process is tainted in the RAG
         if (not self._rag.is_tainted(router.bgp)):
             return
         for vlan in router.vlans.values():
@@ -341,6 +363,8 @@ class TPG(graph.TPG):
                 break
 
     def add_vlan_to_subnet_edges(self, router):
+        # Connect VLAN vertices to target vertex on the same router, if OSPF
+        # or BGP process originates a route and is tainted in the RAG
         if ((router.ospf is not None 
                 and self._rag.is_tainted(router.ospf)
                 and self._t in router.ospf.origins
